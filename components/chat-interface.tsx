@@ -16,9 +16,10 @@ interface Message {
 interface ChatInterfaceProps {
   apiKey: string
   baseUrl: string
+  model: string
 }
 
-export function ChatInterface({ apiKey, baseUrl }: ChatInterfaceProps) {
+export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
   const [messages, setMessages] = React.useState<Message[]>([])
   const [input, setInput] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
@@ -48,7 +49,7 @@ export function ChatInterface({ apiKey, baseUrl }: ChatInterfaceProps) {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: model || "gpt-4o-mini",
           messages: [...messages, userMessage].map((m) => ({
             role: m.role,
             content: m.content,

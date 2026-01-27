@@ -8,6 +8,7 @@ interface SettingsData {
   openaiApiKey: string
   openaiBaseUrl: string
   mcpSettings: string
+  model: string
 }
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
     openaiApiKey: "",
     openaiBaseUrl: "",
     mcpSettings: "{}",
+    model: "gpt-4o-mini",
   })
 
   // Load settings from localStorage on mount
@@ -55,6 +57,7 @@ export default function Home() {
         <ChatInterface
           apiKey={settings.openaiApiKey}
           baseUrl={settings.openaiBaseUrl}
+          model={settings.model}
         />
       </main>
     </div>

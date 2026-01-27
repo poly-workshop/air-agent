@@ -13,12 +13,20 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ThemeSelector } from "@/components/theme-selector"
 
 interface SettingsData {
   openaiApiKey: string
   openaiBaseUrl: string
   mcpSettings: string
+  model: string
 }
 
 interface SettingsDialogProps {
@@ -28,9 +36,28 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ settings, onSettingsChange }: SettingsDialogProps) {
   const [localSettings, setLocalSettings] = React.useState(settings)
+  const [jsonError, setJsonError] = React.useState<string>("")
 
   const handleSave = () => {
+    // Validate JSON before saving
+    if (localSettings.mcpSettings.trim()) {
+      try {
+        JSON.parse(localSettings.mcpSettings)
+        setJsonError("")
+      } catch (e) {
+        setJsonError("Invalid JSON format")
+        return
+      }
+    }
     onSettingsChange(localSettings)
+  }
+
+  const handleMcpSettingsChange = (value: string) => {
+    setLocalSettings({ ...localSettings, mcpSettings: value })
+    // Clear error when user starts typing
+    if (jsonError) {
+      setJsonError("")
+    }
   }
 
   return (
@@ -61,6 +88,26 @@ export function SettingsDialog({ settings, onSettingsChange }: SettingsDialogPro
             />
           </div>
           <div className="grid gap-2">
+            <Label htmlFor="model">Model</Label>
+            <Select
+              value={localSettings.model}
+              onValueChange={(value) =>
+                setLocalSettings({ ...localSettings, model: value })
+              }
+            >
+              <SelectTrigger id="model">
+                <SelectValue placeholder="Select model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
+                <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                <SelectItem value="gpt-4">GPT-4</SelectItem>
+                <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid gap-2">
             <Label htmlFor="baseUrl">OpenAI Base URL (optional)</Label>
             <Input
               id="baseUrl"
@@ -79,10 +126,11 @@ export function SettingsDialog({ settings, onSettingsChange }: SettingsDialogPro
               className="flex min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               placeholder='{"key": "value"}'
               value={localSettings.mcpSettings}
-              onChange={(e) =>
-                setLocalSettings({ ...localSettings, mcpSettings: e.target.value })
-              }
+              onChange={(e) => handleMcpSettingsChange(e.target.value)}
             />
+            {jsonError && (
+              <p className="text-sm text-destructive">{jsonError}</p>
+            )}
           </div>
           <div className="grid gap-2">
             <Label>Theme</Label>
