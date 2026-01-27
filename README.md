@@ -1,6 +1,6 @@
 # Air Agent
 
-A static AI agent chat interface powered by Vercel AI SDK. This is a fully client-side application that can be deployed to GitHub Pages with no backend required.
+A static AI agent chat interface with direct client-side OpenAI API integration. This is a fully client-side application that can be deployed to GitHub Pages with no backend required.
 
 ## Features
 
@@ -108,9 +108,9 @@ You can deploy the `out` directory to any static hosting service:
 ## Technology Stack
 
 - **Framework**: Next.js 16 with App Router
-- **AI SDK**: Vercel AI SDK
+- **AI Integration**: Direct OpenAI API calls (client-side)
 - **UI Components**: shadcn/ui
-- **Styling**: Tailwind CSS v4
+- **Styling**: Tailwind CSS v3
 - **Theme**: next-themes
 - **Icons**: Lucide React
 - **Language**: TypeScript

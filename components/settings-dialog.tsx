@@ -26,7 +26,6 @@ import { ThemeSelector } from "@/components/theme-selector"
 interface SettingsData {
   openaiApiKey: string
   openaiBaseUrl: string
-  mcpSettings: string
   model: string
 }
 
@@ -37,34 +36,22 @@ interface SettingsDialogProps {
 
 export function SettingsDialog({ settings, onSettingsChange }: SettingsDialogProps) {
   const [localSettings, setLocalSettings] = React.useState(settings)
-  const [jsonError, setJsonError] = React.useState<string>("")
+  const [open, setOpen] = React.useState(false)
+
+  // Sync localSettings when settings prop changes
+  React.useEffect(() => {
+    setLocalSettings(settings)
+  }, [settings])
 
   const handleSave = () => {
-    // Validate JSON before saving
-    if (localSettings.mcpSettings.trim()) {
-      try {
-        JSON.parse(localSettings.mcpSettings)
-        setJsonError("")
-      } catch (e) {
-        setJsonError("Invalid JSON format")
-        return
-      }
-    }
     onSettingsChange(localSettings)
-  }
-
-  const handleMcpSettingsChange = (value: string) => {
-    setLocalSettings({ ...localSettings, mcpSettings: value })
-    // Clear error when user starts typing
-    if (jsonError) {
-      setJsonError("")
-    }
+    setOpen(false) // Close dialog after saving
   }
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" aria-label="Open settings">
           <Settings className="h-4 w-4" />
         </Button>
       </DialogTrigger>
@@ -72,7 +59,7 @@ export function SettingsDialog({ settings, onSettingsChange }: SettingsDialogPro
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
           <DialogDescription>
-            Configure your OpenAI API settings and MCP configuration. Settings are stored locally in your browser.
+            Configure your OpenAI API settings. Settings are stored locally in your browser.
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
@@ -87,6 +74,9 @@ export function SettingsDialog({ settings, onSettingsChange }: SettingsDialogPro
                 setLocalSettings({ ...localSettings, openaiApiKey: e.target.value })
               }
             />
+            <p className="text-xs text-muted-foreground">
+              API key is visible in browser DevTools. Use restricted keys when possible.
+            </p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="model">Model</Label>
@@ -119,19 +109,6 @@ export function SettingsDialog({ settings, onSettingsChange }: SettingsDialogPro
                 setLocalSettings({ ...localSettings, openaiBaseUrl: e.target.value })
               }
             />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="mcpSettings">MCP Settings (JSON)</Label>
-            <Textarea
-              id="mcpSettings"
-              className="min-h-[120px]"
-              placeholder='{"key": "value"}'
-              value={localSettings.mcpSettings}
-              onChange={(e) => handleMcpSettingsChange(e.target.value)}
-            />
-            {jsonError && (
-              <p className="text-sm text-destructive">{jsonError}</p>
-            )}
           </div>
           <div className="grid gap-2">
             <Label>Theme</Label>

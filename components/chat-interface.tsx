@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-import { DEFAULT_MODEL } from "@/lib/constants"
+import { DEFAULT_MODEL, DEFAULT_BASE_URL } from "@/lib/constants"
 
 interface Message {
   id: string
@@ -26,6 +26,12 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
   const [input, setInput] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<Error | null>(null)
+  const messagesEndRef = React.useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to bottom when messages change
+  React.useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,7 +49,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
     setError(null)
 
     try {
-      const url = baseUrl || "https://api.openai.com/v1"
+      const url = baseUrl || DEFAULT_BASE_URL
       const response = await fetch(`${url}/chat/completions`, {
         method: "POST",
         headers: {
@@ -61,7 +67,34 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
       })
 
       if (!response.ok) {
-        throw new Error(`API request failed: ${response.statusText}`)
+        let errorDetail = ""
+        try {
+          const bodyText = await response.text()
+          if (bodyText) {
+            try {
+              const parsed = JSON.parse(bodyText)
+              if (parsed && typeof parsed === "object") {
+                const maybeError = (parsed as any).error
+                if (maybeError && typeof maybeError.message === "string") {
+                  errorDetail = maybeError.message
+                } else {
+                  errorDetail = JSON.stringify(parsed)
+                }
+              } else {
+                errorDetail = bodyText
+              }
+            } catch {
+              // Body is not valid JSON; use raw text
+              errorDetail = bodyText
+            }
+          }
+        } catch {
+          // Ignore errors while reading the error body
+        }
+
+        const baseMessage = `API request failed: ${response.status} ${response.statusText}`
+        const detailedMessage = errorDetail ? `${baseMessage} - ${errorDetail}` : baseMessage
+        throw new Error(detailedMessage)
       }
 
       const data = await response.json()
@@ -76,6 +109,14 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
       setError(err instanceof Error ? err : new Error("An error occurred"))
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Submit on Enter, allow Shift+Enter for new line (though Input doesn't support multiline)
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSubmit(e as any)
     }
   }
 
@@ -120,17 +161,19 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
             )}
             {error && (
               <div className="flex justify-center">
-                <div className="bg-destructive/10 text-destructive rounded-lg px-4 py-2">
-                  <p className="text-sm">Error: {error.message}</p>
+                <div className="bg-destructive/10 text-destructive rounded-lg px-4 py-2 max-w-[80%]">
+                  <p className="text-sm">{error.message}</p>
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
         <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
             placeholder="Type your message..."
             disabled={isLoading || !apiKey}
             className="flex-1"

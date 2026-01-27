@@ -8,7 +8,6 @@ import { STORAGE_KEY, DEFAULT_MODEL } from "@/lib/constants"
 interface SettingsData {
   openaiApiKey: string
   openaiBaseUrl: string
-  mcpSettings: string
   model: string
 }
 
@@ -16,7 +15,6 @@ export default function Home() {
   const [settings, setSettings] = React.useState<SettingsData>({
     openaiApiKey: "",
     openaiBaseUrl: "",
-    mcpSettings: "{}",
     model: DEFAULT_MODEL,
   })
 
@@ -45,7 +43,7 @@ export default function Home() {
           <div>
             <h1 className="text-2xl font-bold">Air Agent</h1>
             <p className="text-sm text-muted-foreground">
-              AI Chat Interface powered by Vercel AI SDK
+              AI Chat Interface powered by OpenAI
             </p>
           </div>
           <SettingsDialog

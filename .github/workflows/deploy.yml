@@ -32,6 +32,8 @@ jobs:
         run: npm ci
       
       - name: Build with Next.js
+        env:
+          REPO_NAME: ${{ github.event.repository.name }}
         run: npm run build
       
       - name: Upload artifact

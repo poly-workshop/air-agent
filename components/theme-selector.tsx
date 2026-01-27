@@ -4,7 +4,6 @@ import * as React from "react"
 import { Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
-import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -18,7 +17,7 @@ export function ThemeSelector() {
 
   return (
     <div className="flex items-center gap-2">
-      <Sun className="h-4 w-4" />
+      <Sun className="h-4 w-4" aria-hidden="true" />
       <Select value={theme} onValueChange={setTheme}>
         <SelectTrigger className="w-[140px]">
           <SelectValue placeholder="Select theme" />
@@ -29,7 +28,7 @@ export function ThemeSelector() {
           <SelectItem value="system">System</SelectItem>
         </SelectContent>
       </Select>
-      <Moon className="h-4 w-4" />
+      <Moon className="h-4 w-4" aria-hidden="true" />
     </div>
   )
 }
