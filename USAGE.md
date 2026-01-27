@@ -12,7 +12,6 @@
    - Optionally configure:
      - Model (GPT-4o, GPT-4o Mini, GPT-4 Turbo, GPT-4, GPT-3.5 Turbo)
      - Base URL (for custom OpenAI-compatible endpoints)
-     - MCP Settings (JSON configuration for Model Context Protocol)
    - Click "Save Settings"
 
 3. **Start Chatting**
@@ -41,13 +40,6 @@ Choose the model that fits your needs:
 - **GPT-4 Turbo**: Large context window
 - **GPT-4**: High-quality responses
 - **GPT-3.5 Turbo**: Fast and economical
-
-### MCP Settings
-Model Context Protocol settings allow you to:
-- Configure custom prompts
-- Set system messages
-- Adjust model parameters
-- Must be valid JSON format
 
 ## Tips
 
@@ -78,11 +70,6 @@ Model Context Protocol settings allow you to:
 - Check your OpenAI account has credits
 - Ensure base URL is correct (if using custom endpoint)
 - Check browser console for detailed error messages
-
-### JSON Validation Error
-- Ensure MCP settings are valid JSON
-- Use a JSON validator if unsure
-- Empty `{}` is valid if you don't need MCP settings
 
 ### Theme Not Changing
 - Try refreshing the page

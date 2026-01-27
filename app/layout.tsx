@@ -4,7 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata: Metadata = {
   title: "Air Agent - AI Chat Interface",
-  description: "A static AI agent chat interface powered by Vercel AI SDK",
+  description: "A static AI agent chat interface with direct client-side OpenAI API integration",
 };
 
 export default function RootLayout({

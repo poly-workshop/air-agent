@@ -43,7 +43,8 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
       content: input.trim(),
     }
 
-    setMessages((prev) => [...prev, userMessage])
+    const updatedMessages = [...messages, userMessage]
+    setMessages(updatedMessages)
     setInput("")
     setIsLoading(true)
     setError(null)
@@ -58,7 +59,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
         },
         body: JSON.stringify({
           model: model || DEFAULT_MODEL,
-          messages: [...messages, userMessage].map((m) => ({
+          messages: updatedMessages.map((m) => ({
             role: m.role,
             content: m.content,
           })),
@@ -97,11 +98,21 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
         throw new Error(detailedMessage)
       }
 
-      const data = await response.json()
+      const data: any = await response.json()
+
+      let assistantContent = "No response"
+      if (data && Array.isArray(data.choices) && data.choices.length > 0) {
+        const firstChoice = data.choices[0]
+        const messageContent = firstChoice?.message?.content
+        if (typeof messageContent === "string" && messageContent.trim() !== "") {
+          assistantContent = messageContent
+        }
+      }
+
       const assistantMessage: Message = {
         id: crypto.randomUUID(),
         role: "assistant",
-        content: data.choices[0]?.message?.content || "No response",
+        content: assistantContent,
       }
 
       setMessages((prev) => [...prev, assistantMessage])
@@ -116,7 +127,10 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
     // Submit on Enter, allow Shift+Enter for new line (though Input doesn't support multiline)
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault()
-      handleSubmit(e as any)
+      const form = e.currentTarget.form
+      if (form) {
+        form.requestSubmit()
+      }
     }
   }
 
@@ -155,7 +169,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
             {isLoading && (
               <div className="flex justify-start">
                 <div className="bg-muted rounded-lg px-4 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" aria-label="Loading" />
                 </div>
               </div>
             )}
@@ -178,7 +192,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
             disabled={isLoading || !apiKey}
             className="flex-1"
           />
-          <Button type="submit" disabled={isLoading || !apiKey}>
+          <Button type="submit" disabled={isLoading || !apiKey} aria-label="Send message">
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (

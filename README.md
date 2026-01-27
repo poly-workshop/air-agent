@@ -6,7 +6,7 @@ A static AI agent chat interface with direct client-side OpenAI API integration.
 
 - 🤖 **AI Chat Interface** - Interactive chat with OpenAI models
 - 🎨 **Theme Support** - Light, Dark, and System themes (similar to shadcn.com/create)
-- ⚙️ **Configurable Settings** - API key, base URL, and MCP settings
+- ⚙️ **Configurable Settings** - API key, base URL, and model selection
 - 💾 **Local Storage** - All settings stored in browser localStorage
 - 📦 **No Backend Required** - Fully static site deployable to GitHub Pages
 - 🎯 **Modern UI** - Built with shadcn/ui components
@@ -70,9 +70,6 @@ Your OpenAI API key (required). Get one from [OpenAI Platform](https://platform.
 
 ### OpenAI Base URL (Optional)
 Custom API endpoint if you're using a different OpenAI-compatible service. Default: `https://api.openai.com/v1`
-
-### MCP Settings (JSON)
-Model Context Protocol settings in JSON format. This can be used for additional configuration.
 
 ### Theme
 Choose between Light, Dark, or System theme.
