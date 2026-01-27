@@ -3,6 +3,7 @@
 import * as React from "react"
 import { ChatInterface } from "@/components/chat-interface"
 import { SettingsDialog } from "@/components/settings-dialog"
+import { STORAGE_KEY, DEFAULT_MODEL } from "@/lib/constants"
 
 interface SettingsData {
   openaiApiKey: string
@@ -16,12 +17,12 @@ export default function Home() {
     openaiApiKey: "",
     openaiBaseUrl: "",
     mcpSettings: "{}",
-    model: "gpt-4o-mini",
+    model: DEFAULT_MODEL,
   })
 
   // Load settings from localStorage on mount
   React.useEffect(() => {
-    const savedSettings = localStorage.getItem("air-agent-settings")
+    const savedSettings = localStorage.getItem(STORAGE_KEY)
     if (savedSettings) {
       try {
         setSettings(JSON.parse(savedSettings))
@@ -34,7 +35,7 @@ export default function Home() {
   // Save settings to localStorage
   const handleSettingsChange = (newSettings: SettingsData) => {
     setSettings(newSettings)
-    localStorage.setItem("air-agent-settings", JSON.stringify(newSettings))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings))
   }
 
   return (

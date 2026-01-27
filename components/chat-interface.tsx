@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+import { DEFAULT_MODEL } from "@/lib/constants"
+
 interface Message {
   id: string
   role: "user" | "assistant"
@@ -30,7 +32,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
     if (!input.trim() || !apiKey) return
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       role: "user",
       content: input.trim(),
     }
@@ -49,7 +51,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: model || "gpt-4o-mini",
+          model: model || DEFAULT_MODEL,
           messages: [...messages, userMessage].map((m) => ({
             role: m.role,
             content: m.content,
@@ -64,7 +66,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
 
       const data = await response.json()
       const assistantMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: crypto.randomUUID(),
         role: "assistant",
         content: data.choices[0]?.message?.content || "No response",
       }
