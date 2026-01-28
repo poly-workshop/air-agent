@@ -217,9 +217,9 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
             ))}
             {isLoading && activeToolCalls.length > 0 && (
               <div className="flex justify-start">
-                <div className="bg-muted/50 rounded-lg px-4 py-2 border border-muted-foreground/20">
+                <div className="bg-muted/50 rounded-lg px-4 py-2 border border-muted-foreground/20" aria-label="Executing tools">
                   <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" aria-label="Executing tools" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     <span className="text-xs text-muted-foreground">
                       Executing tools: {activeToolCalls.join(", ")}
                     </span>
@@ -229,8 +229,8 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
             )}
             {isLoading && activeToolCalls.length === 0 && (
               <div className="flex justify-start">
-                <div className="bg-muted rounded-lg px-4 py-2">
-                  <Loader2 className="h-4 w-4 animate-spin" aria-label="Loading" />
+                <div className="bg-muted rounded-lg px-4 py-2" aria-label="Loading">
+                  <Loader2 className="h-4 w-4 animate-spin" />
                 </div>
               </div>
             )}

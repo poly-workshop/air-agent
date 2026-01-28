@@ -37,11 +37,29 @@ export const calculatorTool: Tool = {
   executor: async (args: Record<string, unknown>): Promise<ToolResult> => {
     const { operation, a, b } = args
 
+    // Validate required parameters
+    if (!operation || typeof operation !== "string") {
+      return {
+        success: false,
+        result: null,
+        error: "Operation parameter is required and must be a string",
+      }
+    }
+
     if (typeof a !== "number" || typeof b !== "number") {
       return {
         success: false,
         result: null,
         error: "Both a and b must be numbers",
+      }
+    }
+
+    // Validate operation is one of the allowed values
+    if (!["add", "subtract", "multiply", "divide"].includes(operation)) {
+      return {
+        success: false,
+        result: null,
+        error: `Invalid operation: ${operation}. Must be one of: add, subtract, multiply, divide`,
       }
     }
 
@@ -152,6 +170,15 @@ export const getWeatherTool: Tool = {
   },
   executor: async (args: Record<string, unknown>): Promise<ToolResult> => {
     const { location } = args
+    
+    // Validate required parameter
+    if (!location || typeof location !== "string" || location.trim().length === 0) {
+      return {
+        success: false,
+        result: null,
+        error: "Location parameter is required and must be a non-empty string",
+      }
+    }
     
     // Mock weather data
     const mockWeather = {

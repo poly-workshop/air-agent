@@ -4,10 +4,22 @@
 
 import { ChatMessage, ToolCall, ToolRegistry } from "./tools"
 
+/**
+ * Default maximum number of tool call iterations per message
+ */
+const DEFAULT_MAX_TOOL_ITERATIONS = 5
+
+/**
+ * Stream chunk types for progressive response updates
+ */
 interface StreamChunk {
+  /** Type of chunk being streamed */
   type: "content" | "tool_calls" | "done" | "error"
+  /** Partial content (for type: "content") */
   content?: string
+  /** Tool calls being executed (for type: "tool_calls") */
   tool_calls?: ToolCall[]
+  /** Error message (for type: "error") */
   error?: string
 }
 
@@ -37,7 +49,7 @@ export class AiSdkService {
     this.model = options.model
     this.toolRegistry = options.toolRegistry
     this.onStreamChunk = options.onStreamChunk
-    this.maxToolIterations = options.maxToolIterations || 5
+    this.maxToolIterations = options.maxToolIterations || DEFAULT_MAX_TOOL_ITERATIONS
   }
 
   /**
@@ -90,17 +102,35 @@ export class AiSdkService {
         // Execute all tool calls
         const toolResults = await Promise.all(
           result.message.tool_calls.map(async (toolCall) => {
-            const args = JSON.parse(toolCall.function.arguments)
-            const result = await this.toolRegistry!.executeTool(toolCall.function.name, args)
+            try {
+              const args = JSON.parse(toolCall.function.arguments)
+              const result = await this.toolRegistry!.executeTool(toolCall.function.name, args)
 
-            const toolMessage: ChatMessage = {
-              role: "tool",
-              tool_call_id: toolCall.id,
-              name: toolCall.function.name,
-              content: JSON.stringify(result),
+              const toolMessage: ChatMessage = {
+                role: "tool",
+                tool_call_id: toolCall.id,
+                name: toolCall.function.name,
+                content: JSON.stringify(result),
+              }
+
+              return toolMessage
+            } catch (error) {
+              // Handle JSON parsing or tool execution errors
+              const errorResult = {
+                success: false,
+                result: null,
+                error: error instanceof Error ? error.message : "Failed to parse tool arguments",
+              }
+
+              const toolMessage: ChatMessage = {
+                role: "tool",
+                tool_call_id: toolCall.id,
+                name: toolCall.function.name,
+                content: JSON.stringify(errorResult),
+              }
+
+              return toolMessage
             }
-
-            return toolMessage
           })
         )
 
@@ -172,7 +202,7 @@ export class AiSdkService {
                 const index = toolCallDelta.index
 
                 // Initialize new tool call if needed
-                if (index > currentToolCallIndex) {
+                if (index >= toolCalls.length) {
                   currentToolCallIndex = index
                   toolCalls[index] = {
                     id: toolCallDelta.id || "",
@@ -196,8 +226,8 @@ export class AiSdkService {
                 }
               }
             }
-          } catch (e) {
-            console.error("Error parsing stream chunk:", e)
+          } catch (error) {
+            console.error("Error parsing stream chunk:", error, "Line:", trimmed)
           }
         }
       }
