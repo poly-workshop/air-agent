@@ -84,6 +84,7 @@ registry.registerTool(myTool)
 ### Example Usage
 
 **Simple Tool Call:**
+
 ```
 User: What is 42 multiplied by 17?
 AI: [Calls calculator tool]
@@ -91,6 +92,7 @@ AI: The result of 42 multiplied by 17 is 714.
 ```
 
 **Multi-step Tool Call:**
+
 ```
 User: Calculate 15 + 23, and tell me the weather in Paris
 AI: [Calls calculator tool]
@@ -108,6 +110,7 @@ AI: 15 + 23 equals 38. The weather in Paris is currently Sunny
 ### Quality Assurance
 
 ✅ **Code Review**: All feedback addressed
+
 - Added input validation for all tools
 - Improved error handling throughout
 - Fixed accessibility issues
@@ -115,12 +118,14 @@ AI: 15 + 23 equals 38. The weather in Paris is currently Sunny
 - Added comprehensive JSDoc comments
 
 ✅ **Security Scan**: CodeQL analysis passed with 0 alerts
+
 - No vulnerabilities detected
 - Input validation on all tool parameters
 - Proper error handling
 - Safe data handling
 
 ✅ **Testing**: Manual validation complete
+
 - All tools tested and working
 - Error handling verified
 - Streaming functionality confirmed

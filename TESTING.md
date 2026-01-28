@@ -15,11 +15,12 @@ This guide helps you test the automatic tool calling feature in Air Agent.
 ### 1. Configure the Application
 
 1. Start the application:
+
    ```bash
    npm run dev
    ```
 
-2. Open http://localhost:3000 in your browser
+2. Open <http://localhost:3000> in your browser
 
 3. Click the settings icon (⚙️) in the top right
 
@@ -34,22 +35,26 @@ This guide helps you test the automatic tool calling feature in Air Agent.
 Try these example prompts:
 
 **Simple Calculation:**
+
 ```
 What is 42 multiplied by 17?
 ```
 
 Expected behavior:
+
 - The AI should recognize it needs to use the calculator
 - You'll see a "calculator" badge appear
 - A loading indicator will show "Executing tools: calculator"
 - The AI will respond with the result (714)
 
 **Multiple Calculations:**
+
 ```
 What is 15 + 23, and then divide that result by 2?
 ```
 
 Expected behavior:
+
 - The AI may call the calculator multiple times
 - Each tool call will show in the UI
 - Final answer should be provided
@@ -59,20 +64,24 @@ Expected behavior:
 Try these example prompts:
 
 **Get Current Time:**
+
 ```
 What time is it right now?
 ```
 
 Expected behavior:
+
 - Tool call to `get_current_time`
 - AI responds with current date and time
 
 **Time in Different Timezone:**
+
 ```
 What time is it in Tokyo?
 ```
 
 Expected behavior:
+
 - Tool call to `get_current_time` with timezone parameter
 - AI responds with Tokyo time
 
@@ -81,11 +90,13 @@ Expected behavior:
 Try these example prompts:
 
 **Get Weather:**
+
 ```
 What's the weather like in San Francisco?
 ```
 
 Expected behavior:
+
 - Tool call to `get_weather`
 - AI responds with mock weather data
 - Response includes temperature, conditions, humidity, wind speed
@@ -97,11 +108,13 @@ Expected behavior:
 Try prompts that require multiple tool calls:
 
 **Complex Query:**
+
 ```
 Calculate 100 divided by 4, and then tell me what the weather is like in Paris.
 ```
 
 Expected behavior:
+
 - First tool call: calculator
 - Second tool call: get_weather
 - AI synthesizes both results in the response
@@ -118,11 +131,13 @@ Pay attention to the UI during tool execution:
 ## Visual Indicators to Look For
 
 ### During Execution
+
 - **Loading Spinner**: Shows when waiting for initial response
 - **Tool Execution Banner**: "Executing tools: [tool_name]"
 - **Streaming Text**: Assistant response appears gradually
 
 ### After Completion
+
 - **Tool Call Badges**: Small badges showing which tools were used
 - **Tool Result Messages**: (Optional) Detailed tool results in muted style
 - **Final Response**: Clean, natural language response incorporating tool results
@@ -130,23 +145,29 @@ Pay attention to the UI during tool execution:
 ## Error Testing
 
 ### Invalid API Key
+
 1. Enter an invalid API key in settings
 2. Try to send a message
 3. Should see error message displayed in UI
 
 ### Tool Execution Failure
+
 Tools are designed to handle errors gracefully. Try:
+
 ```
 Calculate 10 divided by 0
 ```
 
 Expected behavior:
+
 - Tool executes
 - Returns error: "Cannot divide by zero"
 - AI acknowledges the error in its response
 
 ### Network Issues
+
 If network connection is lost during streaming:
+
 - Error message should be displayed
 - Previous messages remain visible
 - Can retry after connection is restored
@@ -154,7 +175,9 @@ If network connection is lost during streaming:
 ## Advanced Testing
 
 ### Test Tool Loop Limit
+
 Try a prompt that might cause excessive tool calls:
+
 ```
 Keep calculating squares starting from 2 until you reach a very large number
 ```
@@ -162,6 +185,7 @@ Keep calculating squares starting from 2 until you reach a very large number
 The system has a limit of 5 tool iterations per message to prevent infinite loops.
 
 ### Test Concurrent Tool Usage
+
 ```
 Tell me the current time, calculate 25 times 4, and give me the weather in London, all at once.
 ```
@@ -171,7 +195,9 @@ Tools execute sequentially but should complete in one conversational flow.
 ## Debugging
 
 ### Check Browser Console
+
 Open browser developer tools (F12) and check the console for:
+
 - Network requests to OpenAI API
 - Tool execution logs
 - Error messages
@@ -180,17 +206,20 @@ Open browser developer tools (F12) and check the console for:
 ### Common Issues
 
 **Tools Not Being Called:**
+
 - Verify model supports function calling
 - Check API key is valid
 - Ensure prompts clearly indicate need for tool
 - Check console for errors
 
 **Streaming Not Working:**
+
 - Verify network connection
 - Check API endpoint is accessible
 - Look for errors in console
 
 **UI Not Updating:**
+
 - Refresh the page
 - Clear browser cache
 - Check for JavaScript errors in console
@@ -222,6 +251,7 @@ Use this checklist to verify all functionality:
 When testing, document any deviations from expected behavior:
 
 **Template:**
+
 ```
 Test: [Description]
 Expected: [What should happen]

@@ -19,6 +19,7 @@ All of this happens in a single user interaction without manual intervention.
 #### 1. Tool Types (`lib/tools/types.ts`)
 
 Defines the type system for tools:
+
 - `ToolDefinition`: OpenAI-compatible function definition
 - `ToolExecutor`: Async function that executes a tool
 - `Tool`: Combines definition and executor
@@ -28,6 +29,7 @@ Defines the type system for tools:
 #### 2. Tool Registry (`lib/tools/registry.ts`)
 
 Central registry for managing tools:
+
 ```typescript
 const registry = new ToolRegistry()
 
@@ -44,6 +46,7 @@ const result = await registry.executeTool(name, args)
 #### 3. AI SDK Service (`lib/ai-sdk.ts`)
 
 Handles streaming and automatic tool execution:
+
 ```typescript
 const aiSdk = new AiSdkService({
   apiKey: "your-api-key",
@@ -130,7 +133,9 @@ registry.registerTool(myCustomTool)
 ## Built-in Tools
 
 ### Calculator
+
 Performs basic arithmetic operations:
+
 ```typescript
 // Example usage in chat:
 "What is 15 multiplied by 23?"
@@ -139,7 +144,9 @@ Performs basic arithmetic operations:
 ```
 
 ### Get Current Time
+
 Returns current date and time:
+
 ```typescript
 // Example usage in chat:
 "What time is it in New York?"
@@ -147,7 +154,9 @@ Returns current date and time:
 ```
 
 ### Get Weather
+
 Mock weather data (for demonstration):
+
 ```typescript
 // Example usage in chat:
 "What's the weather in Paris?"
@@ -160,6 +169,7 @@ Mock weather data (for demonstration):
 The tool architecture is designed to be MCP-compatible:
 
 ### Key Features
+
 - **Standardized Interface**: Tools follow a consistent definition and execution pattern
 - **Async Execution**: All tools are asynchronous
 - **Result Format**: Standardized success/error result format
@@ -226,6 +236,7 @@ executor: async (args) => {
 ### API Errors
 
 The AI SDK service handles API errors and propagates them to the UI:
+
 - Network errors
 - Authentication errors
 - Rate limiting
@@ -234,6 +245,7 @@ The AI SDK service handles API errors and propagates them to the UI:
 ### Tool Loop Limits
 
 To prevent infinite loops, the system limits tool iterations:
+
 ```typescript
 maxToolIterations: 5 // Default, configurable
 ```
@@ -241,16 +253,20 @@ maxToolIterations: 5 // Default, configurable
 ## Streaming Behavior
 
 ### Content Streaming
+
 - Content streams character-by-character as the LLM generates it
 - UI updates in real-time for better UX
 
 ### Tool Call Detection
+
 - Tool calls are detected during streaming
 - Visual indicator shows which tools are being executed
 - Tool results are automatically sent back to the LLM
 
 ### Multi-turn Tool Calls
+
 The system automatically handles multi-turn conversations:
+
 1. User sends message
 2. LLM responds with tool calls → Tools execute → Results sent back
 3. LLM responds with more tool calls → Tools execute → Results sent back
@@ -260,20 +276,24 @@ The system automatically handles multi-turn conversations:
 ## UI Indicators
 
 ### Tool Call Badges
+
 - Assistant messages show badges for each tool called
 - Active tool calls display a loading indicator
 
 ### Tool Results
+
 - Tool results are shown in a distinct style
 - Results include the tool name and output
 
 ### Streaming Indicators
+
 - Loading spinner during initial response
 - Tool execution indicators during tool calls
 
 ## Best Practices
 
 ### Tool Design
+
 1. **Single Responsibility**: Each tool should do one thing well
 2. **Clear Descriptions**: Help the LLM understand when to use the tool
 3. **Validate Input**: Always validate and type-check arguments
@@ -281,12 +301,14 @@ The system automatically handles multi-turn conversations:
 5. **Fast Execution**: Keep tools responsive (< 5 seconds ideal)
 
 ### Security
+
 1. **Validate Input**: Never trust tool arguments blindly
 2. **Rate Limiting**: Implement rate limits for expensive operations
 3. **Sandboxing**: Isolate tool execution when possible
 4. **No Secrets**: Never expose API keys or credentials in tool results
 
 ### Testing
+
 1. Test tools independently
 2. Test error cases
 3. Test with real LLM interactions
@@ -295,16 +317,19 @@ The system automatically handles multi-turn conversations:
 ## Troubleshooting
 
 ### Tools Not Being Called
+
 - Check tool descriptions are clear
 - Verify tool is registered in registry
 - Check console for errors
 
 ### Infinite Tool Loops
+
 - Review tool descriptions (LLM might misunderstand)
 - Check maxToolIterations limit
 - Add better error handling in tools
 
 ### Streaming Issues
+
 - Verify API supports streaming
 - Check network connectivity
 - Review browser console for errors

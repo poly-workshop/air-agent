@@ -22,19 +22,24 @@
 ## Features
 
 ### Theme Customization
+
 - Light theme for bright environments
 - Dark theme for low-light environments
 - System theme to match your OS settings
 - Change themes anytime from the settings dialog
 
 ### Persistent Settings
+
 All your settings are saved in your browser's localStorage:
+
 - API credentials never leave your browser
 - Settings persist across sessions
 - Clear your browser data to reset
 
 ### Model Selection
+
 Choose the model that fits your needs:
+
 - **GPT-4o**: Latest and most capable model
 - **GPT-4o Mini**: Fast and cost-effective
 - **GPT-4 Turbo**: Large context window
@@ -61,17 +66,20 @@ Choose the model that fits your needs:
 ## Troubleshooting
 
 ### "Please configure your OpenAI API key"
+
 - Open settings and add a valid API key
 - Ensure the key starts with "sk-"
 - Check that the key is active in your OpenAI account
 
 ### API Errors
+
 - Verify your API key is correct
 - Check your OpenAI account has credits
 - Ensure base URL is correct (if using custom endpoint)
 - Check browser console for detailed error messages
 
 ### Theme Not Changing
+
 - Try refreshing the page
 - Check browser console for errors
 - Clear browser cache if needed

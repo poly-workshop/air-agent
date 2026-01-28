@@ -18,15 +18,19 @@ A static AI agent chat interface with direct client-side OpenAI API integration.
 ## Screenshots
 
 ### Light Theme
+
 ![Light Theme](https://github.com/user-attachments/assets/6550d352-7818-44ab-89a1-6e63ae403806)
 
 ### Dark Theme
+
 ![Dark Theme](https://github.com/user-attachments/assets/a967ce1e-438e-4db8-9d81-74e3bf83aeda)
 
 ### Settings Dialog
+
 ![Settings Dialog](https://github.com/user-attachments/assets/a440bb69-5b77-4890-b8ed-303c827f78c1)
 
 ### Theme Selector
+
 ![Theme Selector](https://github.com/user-attachments/assets/653e099e-5a4a-4d8c-aaeb-a9e2be014094)
 
 ## Getting Started
@@ -39,26 +43,30 @@ A static AI agent chat interface with direct client-side OpenAI API integration.
 ### Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/poly-workshop/air-agent.git
 cd air-agent
 ```
 
-2. Install dependencies:
+1. Install dependencies:
+
 ```bash
 npm install
 ```
 
-3. Run the development server:
+1. Run the development server:
+
 ```bash
 npm run dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser
+1. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ### Building for Production
 
 Build the static site:
+
 ```bash
 npm run build
 ```
@@ -70,12 +78,15 @@ The static files will be generated in the `out` directory.
 Click the settings icon (⚙️) in the top right corner to configure:
 
 ### OpenAI API Key
+
 Your OpenAI API key (required). Get one from [OpenAI Platform](https://platform.openai.com/api-keys).
 
 ### OpenAI Base URL (Optional)
+
 Custom API endpoint if you're using a different OpenAI-compatible service. Default: `https://api.openai.com/v1`
 
 ### Theme
+
 Choose between Light, Dark, or System theme.
 
 All settings are stored locally in your browser's localStorage and never sent to any server except the OpenAI API.
@@ -99,6 +110,7 @@ Air Agent now supports automatic tool calling with streaming responses. When the
 ### Adding Custom Tools
 
 See [TOOL_IMPLEMENTATION.md](./TOOL_IMPLEMENTATION.md) for detailed documentation on:
+
 - Creating custom tools
 - MCP (Model Context Protocol) compatibility
 - Tool architecture and API
@@ -115,6 +127,7 @@ This repository includes a GitHub Actions workflow for automatic deployment to G
    - Set Source to "GitHub Actions"
 
 2. Push to the `main` branch:
+
 ```bash
 git push origin main
 ```
@@ -151,7 +164,7 @@ You can deploy the `out` directory to any static hosting service:
 
 ### Project Structure
 
-```
+```text
 air-agent/
 ├── app/                    # Next.js app directory
 │   ├── globals.css        # Global styles
