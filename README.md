@@ -5,6 +5,10 @@ A static AI agent chat interface with direct client-side OpenAI API integration.
 ## Features
 
 - 🤖 **AI Chat Interface** - Interactive chat with OpenAI models
+- 🛠️ **Automatic Tool Calling** - AI can automatically use tools/functions with streaming responses
+- 📊 **Built-in Tools** - Calculator, time, weather (mock), and easy to add custom tools
+- 🔄 **Streaming Responses** - Real-time streaming of AI responses
+- 🔌 **MCP Compatible** - Tool architecture compatible with Model Context Protocol
 - 🎨 **Theme Support** - Light, Dark, and System themes (similar to shadcn.com/create)
 - ⚙️ **Configurable Settings** - API key, base URL, and model selection
 - 💾 **Local Storage** - All settings stored in browser localStorage
@@ -75,6 +79,30 @@ Custom API endpoint if you're using a different OpenAI-compatible service. Defau
 Choose between Light, Dark, or System theme.
 
 All settings are stored locally in your browser's localStorage and never sent to any server except the OpenAI API.
+
+## Tool Support
+
+Air Agent now supports automatic tool calling with streaming responses. When the AI needs to use a tool:
+
+1. The AI decides which tool to call based on the conversation
+2. The tool executes automatically (e.g., calculator, time check, weather)
+3. Results are sent back to the AI
+4. The AI continues its response with the tool results
+5. All happens seamlessly in one conversation flow
+
+### Built-in Tools
+
+- **Calculator**: Performs arithmetic operations (add, subtract, multiply, divide)
+- **Get Current Time**: Returns current date and time with timezone support
+- **Get Weather**: Returns mock weather data for demonstration
+
+### Adding Custom Tools
+
+See [TOOL_IMPLEMENTATION.md](./TOOL_IMPLEMENTATION.md) for detailed documentation on:
+- Creating custom tools
+- MCP (Model Context Protocol) compatibility
+- Tool architecture and API
+- Best practices and examples
 
 ## Deployment
 
