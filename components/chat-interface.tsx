@@ -1,16 +1,18 @@
 "use client"
 
 import * as React from "react"
-import { Send, Loader2, Wrench } from "lucide-react"
+import { Send, Loader2, Wrench, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { McpToggle } from "@/components/mcp-toggle"
 
-import { DEFAULT_MODEL, DEFAULT_BASE_URL } from "@/lib/constants"
+import { DEFAULT_MODEL, DEFAULT_BASE_URL, MCP_SETTINGS_KEY } from "@/lib/constants"
 import { AiSdkService } from "@/lib/ai-sdk"
 import { ToolRegistry, getDefaultTools, ChatMessage, ToolCall } from "@/lib/tools"
+import { McpClient, mcpToolToAirAgentTool, getMcpServer } from "@/lib/mcp"
 
 interface Message {
   id: string
@@ -39,6 +41,96 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
   })
   const [activeToolCalls, setActiveToolCalls] = React.useState<string[]>([])
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
+  
+  // MCP state
+  const [mcpEnabled, setMcpEnabled] = React.useState(false)
+  const [mcpServerId, setMcpServerId] = React.useState<string | undefined>()
+  const [mcpClient, setMcpClient] = React.useState<McpClient | null>(null)
+  const [mcpStatus, setMcpStatus] = React.useState<string>("disconnected")
+  const [mcpError, setMcpError] = React.useState<string | undefined>()
+
+  // Load MCP settings from localStorage
+  React.useEffect(() => {
+    const saved = localStorage.getItem(MCP_SETTINGS_KEY)
+    if (saved) {
+      try {
+        const settings = JSON.parse(saved)
+        setMcpEnabled(settings.mcpEnabled || false)
+        setMcpServerId(settings.mcpServerId)
+      } catch (e) {
+        console.error("Failed to load MCP settings:", e)
+      }
+    }
+  }, [])
+
+  // Handle MCP connection
+  React.useEffect(() => {
+    const connectMcp = async () => {
+      // Disconnect existing client
+      if (mcpClient) {
+        await mcpClient.disconnect()
+        setMcpClient(null)
+      }
+
+      // Clear MCP tools from registry
+      // (In a real implementation, we'd track which tools came from MCP)
+      
+      if (!mcpEnabled || !mcpServerId) {
+        setMcpStatus("disconnected")
+        return
+      }
+
+      const serverConfig = getMcpServer(mcpServerId)
+      if (!serverConfig) {
+        setMcpError("Server configuration not found")
+        setMcpStatus("error")
+        return
+      }
+
+      try {
+        const client = new McpClient(serverConfig, (status, err) => {
+          setMcpStatus(status)
+          setMcpError(err)
+        })
+
+        await client.connect()
+        
+        // Load tools from MCP server
+        const mcpTools = await client.listTools()
+        
+        // Add MCP tools to registry
+        mcpTools.forEach((mcpTool) => {
+          const tool = mcpToolToAirAgentTool(mcpTool, client)
+          toolRegistry.registerTool(tool)
+        })
+
+        setMcpClient(client)
+        setMcpError(undefined)
+      } catch (err) {
+        console.error("Failed to connect to MCP server:", err)
+        setMcpError(err instanceof Error ? err.message : "Connection failed")
+        setMcpStatus("error")
+      }
+    }
+
+    connectMcp()
+
+    // Cleanup
+    return () => {
+      if (mcpClient) {
+        mcpClient.disconnect()
+      }
+    }
+  }, [mcpEnabled, mcpServerId])
+
+  // Save MCP settings when they change
+  const handleMcpToggle = (enabled: boolean, serverId?: string) => {
+    setMcpEnabled(enabled)
+    setMcpServerId(serverId)
+    
+    const settings = { mcpEnabled: enabled, mcpServerId: serverId }
+    localStorage.setItem(MCP_SETTINGS_KEY, JSON.stringify(settings))
+  }
 
   // Auto-scroll to bottom when messages change
   React.useEffect(() => {
@@ -164,7 +256,32 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
   return (
     <Card className="w-full max-w-4xl mx-auto h-[calc(100vh-8rem)]">
       <CardHeader>
-        <CardTitle>AI Agent Chat</CardTitle>
+        <div className="flex justify-between items-start">
+          <CardTitle>AI Agent Chat</CardTitle>
+          <div className="flex flex-col items-end gap-2">
+            <McpToggle
+              enabled={mcpEnabled}
+              serverId={mcpServerId}
+              onToggle={handleMcpToggle}
+            />
+            {mcpEnabled && mcpStatus === "connected" && (
+              <Badge variant="default" className="text-xs">
+                MCP Connected
+              </Badge>
+            )}
+            {mcpEnabled && mcpStatus === "connecting" && (
+              <Badge variant="outline" className="text-xs">
+                MCP Connecting...
+              </Badge>
+            )}
+            {mcpEnabled && mcpStatus === "error" && (
+              <Badge variant="destructive" className="text-xs">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                MCP Error: {mcpError}
+              </Badge>
+            )}
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col h-[calc(100%-5rem)]">
         <ScrollArea className="flex-1 pr-4">
