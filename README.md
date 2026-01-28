@@ -8,7 +8,9 @@ A static AI agent chat interface with direct client-side OpenAI API integration.
 - 🛠️ **Automatic Tool Calling** - AI can automatically use tools/functions with streaming responses
 - 📊 **Built-in Tools** - Calculator, time, weather (mock), and easy to add custom tools
 - 🔄 **Streaming Responses** - Real-time streaming of AI responses
-- 🔌 **MCP Compatible** - Tool architecture compatible with Model Context Protocol
+- 🔌 **MCP Support** - Full Model Context Protocol integration for browser-based tool discovery
+- 🌐 **MCP Server Configuration** - Configure and manage MCP servers directly in the browser
+- 🎛️ **Per-Chat MCP Control** - Enable/disable MCP and select servers per conversation
 - 🎨 **Theme Support** - Light, Dark, and System themes (similar to shadcn.com/create)
 - ⚙️ **Configurable Settings** - API key, base URL, and model selection
 - 💾 **Local Storage** - All settings stored in browser localStorage
@@ -32,6 +34,14 @@ A static AI agent chat interface with direct client-side OpenAI API integration.
 ### Theme Selector
 
 ![Theme Selector](https://github.com/user-attachments/assets/653e099e-5a4a-4d8c-aaeb-a9e2be014094)
+
+### MCP Configuration
+
+![MCP Configuration Dialog](https://github.com/user-attachments/assets/80526258-f37c-4516-bf44-103cf1457362)
+
+![MCP Server Form](https://github.com/user-attachments/assets/7d206c3d-a379-4a0f-9601-da8bd7ce0416)
+
+![MCP Server List](https://github.com/user-attachments/assets/f2aab3b3-f967-430f-a50b-432fd3cbcf34)
 
 ## Getting Started
 
@@ -88,6 +98,65 @@ Custom API endpoint if you're using a different OpenAI-compatible service. Defau
 ### Theme
 
 Choose between Light, Dark, or System theme.
+
+All settings are stored locally in your browser's localStorage and never sent to any server except the OpenAI API.
+
+## MCP (Model Context Protocol) Configuration
+
+Air Agent supports the Model Context Protocol, allowing you to connect to external MCP servers to extend the AI's capabilities with custom tools and resources.
+
+### Setting Up MCP Servers
+
+1. **Open MCP Configuration**: Click the MCP configuration icon (⚙️) next to the settings icon in the top right corner
+2. **Add a Server**: Click "Add Server" to configure a new MCP server
+3. **Configure Server Details**:
+   - **Server Name**: A friendly name for your MCP server
+   - **Server URL**: Full URL to your MCP server endpoint (e.g., `https://mcp-server.example.com`)
+   - **Description**: Optional description of what the server provides
+   - **API Key**: Optional authentication token (if your server requires it)
+   - **Enable**: Toggle to enable/disable the server
+
+4. **Save**: Click "Add Server" to save the configuration
+
+### Using MCP in Chat
+
+Once you have configured MCP servers:
+
+1. **Enable MCP**: Click the "MCP Disabled" button in the chat interface to enable MCP
+2. **Select Server**: Choose which MCP server to use from the dropdown
+3. **Start Chatting**: The AI will automatically discover and use tools from the connected MCP server
+
+### Connection Status
+
+The chat interface shows the MCP connection status:
+- **MCP Connected**: Successfully connected to the server and tools are available
+- **MCP Connecting...**: Attempting to connect to the server
+- **MCP Error**: Connection failed (check the error message for details)
+
+### Requirements for MCP Servers
+
+Since Air Agent is a browser-only application, your MCP server must:
+
+1. **Support HTTP/SSE Transport**: Use the Streamable HTTP transport protocol
+2. **Enable CORS**: Configure CORS headers to allow browser access from your deployment domain
+3. **Be Publicly Accessible**: The server must be reachable from your browser (localhost won't work for deployed apps)
+
+### Troubleshooting MCP Connections
+
+**Connection Failed / CORS Error**
+- Ensure your MCP server has CORS properly configured
+- Check that the server URL is correct and publicly accessible
+- Verify that the server supports the Streamable HTTP transport
+
+**Tools Not Appearing**
+- Make sure the MCP server is enabled in the configuration
+- Check that MCP is enabled for the current chat
+- Verify the server is returning tools in its `tools/list` response
+
+**Authentication Errors**
+- Check that the API key is correct
+- Ensure the server expects Bearer token authentication
+- Verify the token has the necessary permissions
 
 All settings are stored locally in your browser's localStorage and never sent to any server except the OpenAI API.
 
