@@ -3,8 +3,7 @@
  */
 
 import { McpServerConfig } from "./types"
-
-const MCP_STORAGE_KEY = "air-agent-mcp-servers"
+import { MCP_STORAGE_KEY } from "../constants"
 
 /**
  * Load all MCP server configurations from localStorage
@@ -40,8 +39,10 @@ export function saveMcpServer(server: McpServerConfig): void {
   const index = servers.findIndex((s) => s.id === server.id)
   
   if (index >= 0) {
+    // Preserve the original createdAt when updating
     servers[index] = {
       ...server,
+      createdAt: servers[index].createdAt,
       updatedAt: new Date().toISOString(),
     }
   } else {

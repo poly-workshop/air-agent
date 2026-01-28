@@ -158,8 +158,6 @@ Since Air Agent is a browser-only application, your MCP server must:
 - Ensure the server expects Bearer token authentication
 - Verify the token has the necessary permissions
 
-All settings are stored locally in your browser's localStorage and never sent to any server except the OpenAI API.
-
 ## Tool Support
 
 Air Agent now supports automatic tool calling with streaming responses. When the AI needs to use a tool:

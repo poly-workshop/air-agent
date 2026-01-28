@@ -110,6 +110,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
         console.error("Failed to connect to MCP server:", err)
         setMcpError(err instanceof Error ? err.message : "Connection failed")
         setMcpStatus("error")
+        setMcpClient(null)
       }
     }
 
@@ -118,7 +119,9 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
     // Cleanup
     return () => {
       if (mcpClient) {
-        mcpClient.disconnect()
+        mcpClient.disconnect().catch((err) => {
+          console.error("Error during MCP cleanup:", err)
+        })
       }
     }
   }, [mcpEnabled, mcpServerId])
