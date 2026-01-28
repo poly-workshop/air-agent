@@ -17,7 +17,6 @@ interface Message {
   role: "user" | "assistant" | "tool" | "system"
   content: string
   tool_calls?: ToolCall[]
-  isStreaming?: boolean
 }
 
 interface ChatInterfaceProps {
@@ -104,7 +103,6 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
                   id: streamingMessageId,
                   role: "assistant",
                   content: streamingContent,
-                  isStreaming: true,
                 })
               }
               return newMessages
@@ -202,8 +200,8 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
                       <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                       {message.tool_calls && message.tool_calls.length > 0 && (
                         <div className="mt-2 space-y-1">
-                          {message.tool_calls.map((toolCall, idx) => (
-                            <Badge key={idx} variant="secondary" className="mr-1">
+                          {message.tool_calls.map((toolCall) => (
+                            <Badge key={toolCall.id} variant="secondary" className="mr-1">
                               <Wrench className="h-3 w-3 mr-1" />
                               {toolCall.function.name}
                             </Badge>

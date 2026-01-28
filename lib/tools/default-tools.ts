@@ -126,7 +126,7 @@ export const getCurrentTimeTool: Tool = {
     try {
       const now = new Date()
       const timeString = now.toLocaleString("en-US", { 
-        timeZone: timezone === "UTC" ? "UTC" : timezone 
+        timeZone: timezone 
       })
       
       return {

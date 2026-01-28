@@ -104,13 +104,13 @@ export class AiSdkService {
           result.message.tool_calls.map(async (toolCall) => {
             try {
               const args = JSON.parse(toolCall.function.arguments)
-              const result = await this.toolRegistry!.executeTool(toolCall.function.name, args)
+              const toolResult = await this.toolRegistry!.executeTool(toolCall.function.name, args)
 
               const toolMessage: ChatMessage = {
                 role: "tool",
                 tool_call_id: toolCall.id,
                 name: toolCall.function.name,
-                content: JSON.stringify(result),
+                content: JSON.stringify(toolResult),
               }
 
               return toolMessage
@@ -168,7 +168,6 @@ export class AiSdkService {
     let buffer = ""
     let content = ""
     let toolCalls: ToolCall[] = []
-    let currentToolCallIndex = -1
 
     try {
       while (true) {
@@ -203,7 +202,6 @@ export class AiSdkService {
 
                 // Initialize new tool call if needed
                 if (index >= toolCalls.length) {
-                  currentToolCallIndex = index
                   toolCalls[index] = {
                     id: toolCallDelta.id || "",
                     type: "function",
