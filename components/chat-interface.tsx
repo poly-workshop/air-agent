@@ -1,18 +1,23 @@
 "use client"
 
 import * as React from "react"
-import { Send, Loader2 } from "lucide-react"
+import { Send, Loader2, Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 import { DEFAULT_MODEL, DEFAULT_BASE_URL } from "@/lib/constants"
+import { AiSdkService } from "@/lib/ai-sdk"
+import { ToolRegistry, getDefaultTools, ChatMessage, ToolCall } from "@/lib/tools"
 
 interface Message {
   id: string
-  role: "user" | "assistant"
+  role: "user" | "assistant" | "tool" | "system"
   content: string
+  tool_calls?: ToolCall[]
+  isStreaming?: boolean
 }
 
 interface ChatInterfaceProps {
@@ -26,6 +31,12 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
   const [input, setInput] = React.useState("")
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState<Error | null>(null)
+  const [toolRegistry] = React.useState(() => {
+    const registry = new ToolRegistry()
+    getDefaultTools().forEach((tool) => registry.registerTool(tool))
+    return registry
+  })
+  const [activeToolCalls, setActiveToolCalls] = React.useState<string[]>([])
   const messagesEndRef = React.useRef<HTMLDivElement>(null)
 
   // Auto-scroll to bottom when messages change
@@ -43,81 +54,93 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
       content: input.trim(),
     }
 
-    const updatedMessages = [...messages, userMessage]
-    setMessages(updatedMessages)
+    setMessages((prev) => [...prev, userMessage])
     setInput("")
     setIsLoading(true)
     setError(null)
+    setActiveToolCalls([])
+
+    // Create a streaming assistant message
+    const streamingMessageId = crypto.randomUUID()
+    let streamingContent = ""
 
     try {
       const url = baseUrl || DEFAULT_BASE_URL
-      const response = await fetch(`${url}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: model || DEFAULT_MODEL,
-          messages: updatedMessages.map((m) => ({
-            role: m.role,
-            content: m.content,
-          })),
-          stream: false,
-        }),
-      })
 
-      if (!response.ok) {
-        let errorDetail = ""
-        try {
-          const bodyText = await response.text()
-          if (bodyText) {
-            try {
-              const parsed = JSON.parse(bodyText)
-              if (parsed && typeof parsed === "object") {
-                const maybeError = (parsed as any).error
-                if (maybeError && typeof maybeError.message === "string") {
-                  errorDetail = maybeError.message
-                } else {
-                  errorDetail = JSON.stringify(parsed)
+      // Convert UI messages to ChatMessage format
+      const chatMessages: ChatMessage[] = [
+        ...messages.map((m) => ({
+          role: m.role as "user" | "assistant" | "tool",
+          content: m.content,
+          tool_calls: m.tool_calls,
+        })),
+        {
+          role: "user" as const,
+          content: userMessage.content,
+        },
+      ]
+
+      // Create AI SDK service with streaming callback
+      const aiSdk = new AiSdkService({
+        apiKey,
+        baseUrl: url,
+        model: model || DEFAULT_MODEL,
+        toolRegistry,
+        onStreamChunk: (chunk) => {
+          if (chunk.type === "content" && chunk.content) {
+            streamingContent += chunk.content
+            setMessages((prev) => {
+              const newMessages = [...prev]
+              const streamingIndex = newMessages.findIndex(
+                (m) => m.id === streamingMessageId
+              )
+              if (streamingIndex >= 0) {
+                newMessages[streamingIndex] = {
+                  ...newMessages[streamingIndex],
+                  content: streamingContent,
                 }
               } else {
-                errorDetail = bodyText
+                newMessages.push({
+                  id: streamingMessageId,
+                  role: "assistant",
+                  content: streamingContent,
+                  isStreaming: true,
+                })
               }
-            } catch {
-              // Body is not valid JSON; use raw text
-              errorDetail = bodyText
-            }
+              return newMessages
+            })
+          } else if (chunk.type === "tool_calls" && chunk.tool_calls) {
+            setActiveToolCalls(
+              chunk.tool_calls.map((tc) => tc.function.name)
+            )
           }
-        } catch {
-          // Ignore errors while reading the error body
-        }
+        },
+      })
 
-        const baseMessage = `API request failed: ${response.status} ${response.statusText}`
-        const detailedMessage = errorDetail ? `${baseMessage} - ${errorDetail}` : baseMessage
-        throw new Error(detailedMessage)
-      }
+      // Send message and handle automatic tool execution
+      const resultMessages = await aiSdk.sendMessage(chatMessages)
 
-      const data: any = await response.json()
+      // Update messages with final results
+      const finalMessages: Message[] = resultMessages
+        .slice(messages.length + 1) // Skip already displayed messages
+        .map((msg) => ({
+          id: crypto.randomUUID(),
+          role: msg.role,
+          content: msg.content || "",
+          tool_calls: msg.tool_calls,
+        }))
 
-      let assistantContent = "No response"
-      if (data && Array.isArray(data.choices) && data.choices.length > 0) {
-        const firstChoice = data.choices[0]
-        const messageContent = firstChoice?.message?.content
-        if (typeof messageContent === "string" && messageContent.trim() !== "") {
-          assistantContent = messageContent
-        }
-      }
+      setMessages((prev) => {
+        // Remove streaming message if it exists
+        const filtered = prev.filter((m) => m.id !== streamingMessageId)
+        return [...filtered, ...finalMessages]
+      })
 
-      const assistantMessage: Message = {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        content: assistantContent,
-      }
-
-      setMessages((prev) => [...prev, assistantMessage])
+      setActiveToolCalls([])
     } catch (err) {
       setError(err instanceof Error ? err : new Error("An error occurred"))
+      // Remove streaming message on error
+      setMessages((prev) => prev.filter((m) => m.id !== streamingMessageId))
     } finally {
       setIsLoading(false)
     }
@@ -159,14 +182,52 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
                   className={`rounded-lg px-4 py-2 max-w-[80%] ${
                     message.role === "user"
                       ? "bg-primary text-primary-foreground"
+                      : message.role === "tool"
+                      ? "bg-muted/50 border border-muted-foreground/20"
                       : "bg-muted"
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                  {message.role === "tool" ? (
+                    <div className="text-xs text-muted-foreground">
+                      <Badge variant="outline" className="mb-1">
+                        <Wrench className="h-3 w-3 mr-1" />
+                        Tool Result
+                      </Badge>
+                      <pre className="whitespace-pre-wrap font-mono text-xs mt-1">
+                        {message.content}
+                      </pre>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      {message.tool_calls && message.tool_calls.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {message.tool_calls.map((toolCall, idx) => (
+                            <Badge key={idx} variant="secondary" className="mr-1">
+                              <Wrench className="h-3 w-3 mr-1" />
+                              {toolCall.function.name}
+                            </Badge>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
             ))}
-            {isLoading && (
+            {isLoading && activeToolCalls.length > 0 && (
+              <div className="flex justify-start">
+                <div className="bg-muted/50 rounded-lg px-4 py-2 border border-muted-foreground/20">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" aria-label="Executing tools" />
+                    <span className="text-xs text-muted-foreground">
+                      Executing tools: {activeToolCalls.join(", ")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            {isLoading && activeToolCalls.length === 0 && (
               <div className="flex justify-start">
                 <div className="bg-muted rounded-lg px-4 py-2">
                   <Loader2 className="h-4 w-4 animate-spin" aria-label="Loading" />
