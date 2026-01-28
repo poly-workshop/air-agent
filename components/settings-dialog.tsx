@@ -13,13 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+
 import { ThemeSelector } from "@/components/theme-selector"
 
 interface SettingsData {
@@ -79,23 +73,18 @@ export function SettingsDialog({ settings, onSettingsChange }: SettingsDialogPro
           </div>
           <div className="grid gap-2">
             <Label htmlFor="model">Model</Label>
-            <Select
+            <Input
+              id="model"
+              type="text"
+              placeholder="gpt-4o-mini"
               value={localSettings.model}
-              onValueChange={(value) =>
-                setLocalSettings({ ...localSettings, model: value })
+              onChange={(e) =>
+                setLocalSettings({ ...localSettings, model: e.target.value })
               }
-            >
-              <SelectTrigger id="model">
-                <SelectValue placeholder="Select model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                <SelectItem value="gpt-4o-mini">GPT-4o Mini</SelectItem>
-                <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                <SelectItem value="gpt-4">GPT-4</SelectItem>
-                <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-              </SelectContent>
-            </Select>
+            />
+            <p className="text-xs text-muted-foreground">
+              Enter the model name (e.g., gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo).
+            </p>
           </div>
           <div className="grid gap-2">
             <Label htmlFor="baseUrl">OpenAI Base URL (optional)</Label>
