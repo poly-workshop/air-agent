@@ -48,15 +48,16 @@ function createMarkdownComponents(isUserMessage: boolean = false): Components {
           />
         )
       }
-      return <code className="font-mono text-xs break-words max-w-full" {...props} />
+      return <code className="font-mono text-xs whitespace-pre-wrap break-all block" {...props} />
     },
     pre: ({ node, ...props }) => (
       <pre 
-        className={`border rounded p-3 my-2 overflow-x-auto break-words max-w-full w-full ${
+        className={`border rounded p-3 my-2 overflow-x-auto max-w-full ${
           isUserMessage 
             ? "bg-primary-foreground/10 border-primary-foreground/30" 
             : "bg-muted border border-muted-foreground/20"
-        }`} 
+        }`}
+        style={{ maxWidth: '100%', wordWrap: 'break-word' }}
         {...props} 
       />
     ),
