@@ -24,22 +24,22 @@ function createMarkdownComponents(isUserMessage: boolean = false): Components {
       <h3 className="text-lg font-bold mt-2 mb-1" {...props} />
     ),
     p: ({ node, ...props }) => (
-      <p className="my-2" {...props} />
+      <p className="my-2 break-words" {...props} />
     ),
     ul: ({ node, ...props }) => (
-      <ul className="list-disc list-inside my-2 ml-2" {...props} />
+      <ul className="list-disc list-inside my-2 ml-2 break-words" {...props} />
     ),
     ol: ({ node, ...props }) => (
-      <ol className="list-decimal list-inside my-2 ml-2" {...props} />
+      <ol className="list-decimal list-inside my-2 ml-2 break-words" {...props} />
     ),
     li: ({ node, ...props }) => (
-      <li className="my-1" {...props} />
+      <li className="my-1 break-words" {...props} />
     ),
     code: ({ node, inline, className, ...props }: any) => {
       if (inline) {
         return (
           <code 
-            className={`px-1.5 py-0.5 rounded text-sm font-mono ${
+            className={`px-1.5 py-0.5 rounded text-sm font-mono break-words ${
               isUserMessage 
                 ? "bg-primary-foreground/20" 
                 : "bg-muted"
@@ -48,11 +48,11 @@ function createMarkdownComponents(isUserMessage: boolean = false): Components {
           />
         )
       }
-      return <code className="font-mono text-sm" {...props} />
+      return <code className="font-mono text-sm break-words" {...props} />
     },
     pre: ({ node, ...props }) => (
       <pre 
-        className={`border rounded p-3 my-2 overflow-x-auto ${
+        className={`border rounded p-3 my-2 overflow-x-auto break-words ${
           isUserMessage 
             ? "bg-primary-foreground/10 border-primary-foreground/30" 
             : "bg-muted border border-muted-foreground/20"
@@ -71,20 +71,22 @@ function createMarkdownComponents(isUserMessage: boolean = false): Components {
       />
     ),
     a: ({ node, ...props }) => (
-      <a className={`underline ${linkColor} ${linkHover}`} {...props} />
+      <a className={`underline break-words ${linkColor} ${linkHover}`} {...props} />
     ),
     img: ({ node, ...props }) => (
       <img className="max-w-full h-auto rounded my-2" {...props} />
     ),
     table: ({ node, ...props }) => (
-      <table 
-        className={`border-collapse my-2 ${
-          isUserMessage 
-            ? "border border-primary-foreground/30" 
-            : "border border-muted-foreground/20"
-        }`} 
-        {...props} 
-      />
+      <div className="overflow-x-auto my-2">
+        <table 
+          className={`border-collapse min-w-full ${
+            isUserMessage 
+              ? "border border-primary-foreground/30" 
+              : "border border-muted-foreground/20"
+          }`} 
+          {...props} 
+        />
+      </div>
     ),
     th: ({ node, ...props }) => (
       <th 

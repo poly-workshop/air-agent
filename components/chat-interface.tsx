@@ -288,8 +288,8 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col flex-1 overflow-hidden">
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
+        <ScrollArea className="flex-1">
+          <div className="space-y-4 px-4">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
                 <p>Start a conversation with the AI agent</p>
@@ -304,12 +304,12 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
                 }`}
               >
                 <div
-                  className={`rounded-lg px-4 py-2 max-w-[80%] ${
+                  className={`rounded-lg px-4 py-2 overflow-hidden break-words ${
                     message.role === "user"
-                      ? "bg-primary text-primary-foreground"
+                      ? "bg-primary text-primary-foreground max-w-[90%]"
                       : message.role === "tool"
-                      ? "bg-muted/50 border border-muted-foreground/20"
-                      : "bg-muted"
+                      ? "bg-muted/50 border border-muted-foreground/20 max-w-[90%]"
+                      : "bg-muted max-w-[90%]"
                   }`}
                 >
                   {message.role === "tool" ? (
