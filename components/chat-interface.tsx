@@ -257,8 +257,8 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto h-[calc(100vh-8rem)]">
-      <CardHeader>
+    <Card className="w-full max-w-4xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+      <CardHeader className="flex-shrink-0">
         <div className="flex justify-between items-start">
           <CardTitle>AI Agent Chat</CardTitle>
           <div className="flex flex-col items-end gap-2">
@@ -286,7 +286,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col h-[calc(100%-5rem)]">
+      <CardContent className="flex flex-col flex-1 overflow-hidden">
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
             {messages.length === 0 && (
@@ -368,28 +368,30 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
-        <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            disabled={isLoading || !apiKey}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={isLoading || !apiKey} aria-label="Send message">
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </form>
-        {!apiKey && (
-          <p className="text-sm text-muted-foreground text-center mt-2">
-            Please configure your OpenAI API key in settings
-          </p>
-        )}
+        <div className="flex-shrink-0 pt-4">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message..."
+              disabled={isLoading || !apiKey}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={isLoading || !apiKey} aria-label="Send message">
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </form>
+          {!apiKey && (
+            <p className="text-sm text-muted-foreground text-center mt-2">
+              Please configure your OpenAI API key in settings
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
