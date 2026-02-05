@@ -48,19 +48,41 @@ function createMarkdownComponents(isUserMessage: boolean = false): Components {
           />
         )
       }
+      
+      // 检查是否为markdown代码块，如果是则递归渲染为markdown
+      if (className?.includes('language-markdown')) {
+        const content = String(props.children).replace(/\n$/, '')
+        return (
+          <div className="my-2">
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={createMarkdownComponents(isUserMessage)}>
+              {content}
+            </ReactMarkdown>
+          </div>
+        )
+      }
+      
       return <code className="font-mono text-xs whitespace-pre-wrap break-all block" {...props} />
     },
-    pre: ({ node, ...props }) => (
-      <pre 
-        className={`border rounded p-3 my-2 overflow-x-auto max-w-full ${
-          isUserMessage 
-            ? "bg-primary-foreground/10 border-primary-foreground/30" 
-            : "bg-muted border border-muted-foreground/20"
-        }`}
-        style={{ maxWidth: '100%', wordWrap: 'break-word' }}
-        {...props} 
-      />
-    ),
+    pre: ({ node, children, ...props }: any) => {
+      // 检查子元素是否为markdown代码块
+      const child = React.Children.toArray(children)[0] as any
+      if (child?.props?.className?.includes('language-markdown')) {
+        // 直接返回子元素，不包裹pre标签
+        return <>{children}</>
+      }
+      
+      return (
+        <pre 
+          className={`border rounded p-3 my-2 overflow-x-auto max-w-full ${
+            isUserMessage 
+              ? "bg-primary-foreground/10 border-primary-foreground/30" 
+              : "bg-muted border border-muted-foreground/20"
+          }`}
+          style={{ maxWidth: '100%', wordWrap: 'break-word' }}
+          {...props} 
+        />
+      )
+    },
     blockquote: ({ node, ...props }) => (
       <blockquote 
         className={`border-l-4 pl-4 italic my-2 ${
