@@ -15,13 +15,13 @@ function createMarkdownComponents(isUserMessage: boolean = false): Components {
 
   return {
     h1: ({ node, ...props }) => (
-      <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />
+      <h1 className="text-xl font-bold mt-4 mb-2" {...props} />
     ),
     h2: ({ node, ...props }) => (
-      <h2 className="text-xl font-bold mt-3 mb-2" {...props} />
+      <h2 className="text-lg font-bold mt-3 mb-2" {...props} />
     ),
     h3: ({ node, ...props }) => (
-      <h3 className="text-lg font-bold mt-2 mb-1" {...props} />
+      <h3 className="text-base font-bold mt-2 mb-1" {...props} />
     ),
     p: ({ node, ...props }) => (
       <p className="my-2 break-words" {...props} />
@@ -39,7 +39,7 @@ function createMarkdownComponents(isUserMessage: boolean = false): Components {
       if (inline) {
         return (
           <code 
-            className={`px-1.5 py-0.5 rounded text-sm font-mono break-words ${
+            className={`px-1.5 py-0.5 rounded text-xs font-mono break-words max-w-full ${
               isUserMessage 
                 ? "bg-primary-foreground/20" 
                 : "bg-muted"
@@ -48,11 +48,11 @@ function createMarkdownComponents(isUserMessage: boolean = false): Components {
           />
         )
       }
-      return <code className="font-mono text-sm break-words" {...props} />
+      return <code className="font-mono text-xs break-words max-w-full" {...props} />
     },
     pre: ({ node, ...props }) => (
       <pre 
-        className={`border rounded p-3 my-2 overflow-x-auto break-words ${
+        className={`border rounded p-3 my-2 overflow-x-auto break-words max-w-full w-full ${
           isUserMessage 
             ? "bg-primary-foreground/10 border-primary-foreground/30" 
             : "bg-muted border border-muted-foreground/20"
