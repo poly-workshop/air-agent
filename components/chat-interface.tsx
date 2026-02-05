@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { McpToggle } from "@/components/mcp-toggle"
+import { MarkdownRenderer } from "@/components/markdown-renderer"
 
 import { DEFAULT_MODEL, DEFAULT_BASE_URL, MCP_SETTINGS_KEY } from "@/lib/constants"
 import { AiSdkService } from "@/lib/ai-sdk"
@@ -317,13 +318,15 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
                         <Wrench className="h-3 w-3 mr-1" />
                         Tool Result
                       </Badge>
-                      <pre className="whitespace-pre-wrap font-mono text-xs mt-1">
-                        {message.content}
-                      </pre>
+                      <div className="mt-1">
+                        <MarkdownRenderer content={message.content} />
+                      </div>
                     </div>
                   ) : (
                     <>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                      <div>
+                        <MarkdownRenderer content={message.content} />
+                      </div>
                       {message.tool_calls && message.tool_calls.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {message.tool_calls.map((toolCall) => (
