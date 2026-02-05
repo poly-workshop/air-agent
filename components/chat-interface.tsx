@@ -319,13 +319,16 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
                         Tool Result
                       </Badge>
                       <div className="mt-1">
-                        <MarkdownRenderer content={message.content} />
+                        <MarkdownRenderer content={message.content} isUserMessage={false} />
                       </div>
                     </div>
                   ) : (
                     <>
                       <div>
-                        <MarkdownRenderer content={message.content} />
+                        <MarkdownRenderer 
+                          content={message.content} 
+                          isUserMessage={message.role === "user"}
+                        />
                       </div>
                       {message.tool_calls && message.tool_calls.length > 0 && (
                         <div className="mt-2 space-y-1">

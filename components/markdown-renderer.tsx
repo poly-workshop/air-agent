@@ -5,68 +5,130 @@ import remarkGfm from "remark-gfm"
 interface MarkdownRendererProps {
   content: string
   className?: string
+  isUserMessage?: boolean
 }
 
-const markdownComponents: Components = {
-  h1: ({ node, ...props }) => (
-    <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />
-  ),
-  h2: ({ node, ...props }) => (
-    <h2 className="text-xl font-bold mt-3 mb-2" {...props} />
-  ),
-  h3: ({ node, ...props }) => (
-    <h3 className="text-lg font-bold mt-2 mb-1" {...props} />
-  ),
-  p: ({ node, ...props }) => (
-    <p className="my-2" {...props} />
-  ),
-  ul: ({ node, ...props }) => (
-    <ul className="list-disc list-inside my-2 ml-2" {...props} />
-  ),
-  ol: ({ node, ...props }) => (
-    <ol className="list-decimal list-inside my-2 ml-2" {...props} />
-  ),
-  li: ({ node, ...props }) => (
-    <li className="my-1" {...props} />
-  ),
-  code: ({ node, inline, className, ...props }: any) => {
-    if (inline) {
-      return (
-        <code className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono" {...props} />
-      )
-    }
-    return <code className="font-mono text-sm" {...props} />
-  },
-  pre: ({ node, ...props }) => (
-    <pre className="bg-muted border border-muted-foreground/20 rounded p-3 my-2 overflow-x-auto" {...props} />
-  ),
-  blockquote: ({ node, ...props }) => (
-    <blockquote className="border-l-4 border-muted-foreground/50 pl-4 italic my-2 text-muted-foreground" {...props} />
-  ),
-  a: ({ node, ...props }) => (
-    <a className="text-primary underline hover:text-primary/80" {...props} />
-  ),
-  img: ({ node, ...props }) => (
-    <img className="max-w-full h-auto rounded my-2" {...props} />
-  ),
-  table: ({ node, ...props }) => (
-    <table className="border-collapse border border-muted-foreground/20 my-2" {...props} />
-  ),
-  th: ({ node, ...props }) => (
-    <th className="border border-muted-foreground/20 px-3 py-2 bg-muted text-left font-semibold" {...props} />
-  ),
-  td: ({ node, ...props }) => (
-    <td className="border border-muted-foreground/20 px-3 py-2" {...props} />
-  ),
-  hr: ({ node, ...props }) => (
-    <hr className="my-4 border-muted-foreground/20" {...props} />
-  ),
+function createMarkdownComponents(isUserMessage: boolean = false): Components {
+  // 根据消息类型确定链接颜色
+  const linkColor = isUserMessage ? "text-primary-foreground" : "text-primary"
+  const linkHover = isUserMessage ? "hover:text-primary-foreground/80" : "hover:text-primary/80"
+
+  return {
+    h1: ({ node, ...props }) => (
+      <h1 className="text-2xl font-bold mt-4 mb-2" {...props} />
+    ),
+    h2: ({ node, ...props }) => (
+      <h2 className="text-xl font-bold mt-3 mb-2" {...props} />
+    ),
+    h3: ({ node, ...props }) => (
+      <h3 className="text-lg font-bold mt-2 mb-1" {...props} />
+    ),
+    p: ({ node, ...props }) => (
+      <p className="my-2" {...props} />
+    ),
+    ul: ({ node, ...props }) => (
+      <ul className="list-disc list-inside my-2 ml-2" {...props} />
+    ),
+    ol: ({ node, ...props }) => (
+      <ol className="list-decimal list-inside my-2 ml-2" {...props} />
+    ),
+    li: ({ node, ...props }) => (
+      <li className="my-1" {...props} />
+    ),
+    code: ({ node, inline, className, ...props }: any) => {
+      if (inline) {
+        return (
+          <code 
+            className={`px-1.5 py-0.5 rounded text-sm font-mono ${
+              isUserMessage 
+                ? "bg-primary-foreground/20" 
+                : "bg-muted"
+            }`} 
+            {...props} 
+          />
+        )
+      }
+      return <code className="font-mono text-sm" {...props} />
+    },
+    pre: ({ node, ...props }) => (
+      <pre 
+        className={`border rounded p-3 my-2 overflow-x-auto ${
+          isUserMessage 
+            ? "bg-primary-foreground/10 border-primary-foreground/30" 
+            : "bg-muted border border-muted-foreground/20"
+        }`} 
+        {...props} 
+      />
+    ),
+    blockquote: ({ node, ...props }) => (
+      <blockquote 
+        className={`border-l-4 pl-4 italic my-2 ${
+          isUserMessage 
+            ? "border-primary-foreground/50 text-primary-foreground/80" 
+            : "border-muted-foreground/50 text-muted-foreground"
+        }`} 
+        {...props} 
+      />
+    ),
+    a: ({ node, ...props }) => (
+      <a className={`underline ${linkColor} ${linkHover}`} {...props} />
+    ),
+    img: ({ node, ...props }) => (
+      <img className="max-w-full h-auto rounded my-2" {...props} />
+    ),
+    table: ({ node, ...props }) => (
+      <table 
+        className={`border-collapse my-2 ${
+          isUserMessage 
+            ? "border border-primary-foreground/30" 
+            : "border border-muted-foreground/20"
+        }`} 
+        {...props} 
+      />
+    ),
+    th: ({ node, ...props }) => (
+      <th 
+        className={`px-3 py-2 text-left font-semibold ${
+          isUserMessage 
+            ? "border border-primary-foreground/30 bg-primary-foreground/10" 
+            : "border border-muted-foreground/20 bg-muted"
+        }`} 
+        {...props} 
+      />
+    ),
+    td: ({ node, ...props }) => (
+      <td 
+        className={`px-3 py-2 ${
+          isUserMessage 
+            ? "border border-primary-foreground/30" 
+            : "border border-muted-foreground/20"
+        }`} 
+        {...props} 
+      />
+    ),
+    hr: ({ node, ...props }) => (
+      <hr 
+        className={`my-4 ${
+          isUserMessage 
+            ? "border-primary-foreground/30" 
+            : "border-muted-foreground/20"
+        }`} 
+        {...props} 
+      />
+    ),
+  }
 }
 
-export function MarkdownRenderer({ content, className = "" }: MarkdownRendererProps) {
+export function MarkdownRenderer({ 
+  content, 
+  className = "", 
+  isUserMessage = false 
+}: MarkdownRendererProps) {
+  const components = createMarkdownComponents(isUserMessage)
+
   return (
-    <div className={`prose prose-sm dark:prose-invert max-w-none ${className}`}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+    <div className={`max-w-none ${className}`}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
     </div>
