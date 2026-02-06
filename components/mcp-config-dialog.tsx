@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Server, Settings, Plus, Trash2, Power } from "lucide-react"
+import { Server, Plus, Trash2, Power } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
