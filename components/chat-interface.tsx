@@ -288,7 +288,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-col flex-1 overflow-hidden">
-        <ScrollArea className="flex-1 w-full max-w-full">
+        <ScrollArea className="flex-1 w-full max-w-full pr-4">
           <div className="space-y-4 px-4 overflow-x-hidden max-w-full">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
