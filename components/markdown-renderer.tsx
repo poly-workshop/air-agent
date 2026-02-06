@@ -32,7 +32,7 @@ export function MarkdownRenderer({
     `}
     style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
     >
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} skipHtml={true}>
         {content}
       </ReactMarkdown>
     </div>
