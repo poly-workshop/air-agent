@@ -17,10 +17,10 @@ export function MarkdownRenderer({
 
   const colorClasses = isUserMessage
     ? [
-        "text-inherit",
-        "prose-headings:text-inherit prose-p:text-inherit prose-li:text-inherit",
-        "prose-strong:text-inherit prose-em:text-inherit prose-code:text-inherit",
-        "prose-a:text-inherit hover:prose-a:text-inherit/80 prose-a:underline",
+        "text-primary-foreground",
+        "prose-headings:text-primary-foreground prose-p:text-primary-foreground prose-li:text-primary-foreground",
+        "prose-strong:text-primary-foreground prose-em:text-primary-foreground prose-code:text-primary-foreground",
+        "prose-a:text-primary-foreground hover:prose-a:text-primary-foreground/80 prose-a:underline",
       ].join(" ")
     : [
         "dark:prose-invert",
