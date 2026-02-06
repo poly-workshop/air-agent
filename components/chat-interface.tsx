@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { McpToggle } from "@/components/mcp-toggle"
+import { MarkdownRenderer } from "@/components/markdown-renderer"
 
 import { DEFAULT_MODEL, DEFAULT_BASE_URL, MCP_SETTINGS_KEY } from "@/lib/constants"
 import { AiSdkService } from "@/lib/ai-sdk"
@@ -257,8 +258,8 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto h-[calc(100vh-8rem)]">
-      <CardHeader>
+    <Card className="w-full max-w-4xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+      <CardHeader className="flex-shrink-0">
         <div className="flex justify-between items-start">
           <CardTitle>AI Agent Chat</CardTitle>
           <div className="flex flex-col items-end gap-2">
@@ -286,9 +287,9 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col h-[calc(100%-5rem)]">
-        <ScrollArea className="flex-1 pr-4">
-          <div className="space-y-4">
+      <CardContent className="flex flex-col flex-1 overflow-hidden">
+        <ScrollArea className="flex-1 w-full max-w-full pr-4">
+          <div className="space-y-4 px-4 overflow-x-hidden max-w-full">
             {messages.length === 0 && (
               <div className="text-center text-muted-foreground py-8">
                 <p>Start a conversation with the AI agent</p>
@@ -303,38 +304,43 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
                 }`}
               >
                 <div
-                  className={`rounded-lg px-4 py-2 max-w-[80%] ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : message.role === "tool"
-                      ? "bg-muted/50 border border-muted-foreground/20"
-                      : "bg-muted"
+                  className={`rounded-lg px-4 py-2 overflow-hidden break-words min-w-0 ${
+                  message.role === "user"
+                  ? "bg-primary text-primary-foreground max-w-[90%]"
+                  : message.role === "tool"
+                  ? "bg-muted/50 border border-muted-foreground/20 max-w-[90%]"
+                  : "bg-muted max-w-[90%]"
                   }`}
                 >
                   {message.role === "tool" ? (
-                    <div className="text-xs text-muted-foreground">
-                      <Badge variant="outline" className="mb-1">
-                        <Wrench className="h-3 w-3 mr-1" />
-                        Tool Result
-                      </Badge>
-                      <pre className="whitespace-pre-wrap font-mono text-xs mt-1">
-                        {message.content}
-                      </pre>
-                    </div>
+                  <div className="text-xs text-muted-foreground">
+                  <Badge variant="outline" className="mb-1">
+                  <Wrench className="h-3 w-3 mr-1" />
+                  Tool Result
+                  </Badge>
+                  <div className="mt-1">
+                  <MarkdownRenderer content={message.content} isUserMessage={false} />
+                  </div>
+                  </div>
                   ) : (
-                    <>
-                      <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                      {message.tool_calls && message.tool_calls.length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          {message.tool_calls.map((toolCall) => (
-                            <Badge key={toolCall.id} variant="secondary" className="mr-1">
-                              <Wrench className="h-3 w-3 mr-1" />
-                              {toolCall.function.name}
-                            </Badge>
-                          ))}
-                        </div>
-                      )}
-                    </>
+                  <>
+                  <div>
+                  <MarkdownRenderer 
+                  content={message.content} 
+                  isUserMessage={message.role === "user"}
+                  />
+                  </div>
+                  {message.tool_calls && message.tool_calls.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {message.tool_calls.map((toolCall) => (
+                      <Badge key={toolCall.id} variant="secondary" className="mr-1">
+                        <Wrench className="h-3 w-3 mr-1" />
+                        {toolCall.function.name}
+                      </Badge>
+                    ))}
+                  </div>
+                  )}
+                  </>
                   )}
                 </div>
               </div>
@@ -368,28 +374,30 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
             <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
-        <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message..."
-            disabled={isLoading || !apiKey}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={isLoading || !apiKey} aria-label="Send message">
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </Button>
-        </form>
-        {!apiKey && (
-          <p className="text-sm text-muted-foreground text-center mt-2">
-            Please configure your OpenAI API key in settings
-          </p>
-        )}
+        <div className="flex-shrink-0 pt-4">
+          <form onSubmit={handleSubmit} className="flex gap-2">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message..."
+              disabled={isLoading || !apiKey}
+              className="flex-1"
+            />
+            <Button type="submit" disabled={isLoading || !apiKey} aria-label="Send message">
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </form>
+          {!apiKey && (
+            <p className="text-sm text-muted-foreground text-center mt-2">
+              Please configure your OpenAI API key in settings
+            </p>
+          )}
+        </div>
       </CardContent>
     </Card>
   )

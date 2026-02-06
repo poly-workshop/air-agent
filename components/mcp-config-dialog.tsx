@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Settings, Plus, Trash2, Power } from "lucide-react"
+import { Server, Plus, Trash2, Power, Settings } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -108,7 +108,7 @@ export function McpConfigDialog({ onServerChange }: McpConfigDialogProps) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" size="icon" aria-label="Configure MCP servers">
-          <Settings className="h-4 w-4" />
+          <Server className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px] max-h-[80vh]">
@@ -201,7 +201,7 @@ export function McpConfigDialog({ onServerChange }: McpConfigDialogProps) {
                 {servers.length === 0 && (
                   <div className="text-center text-muted-foreground py-8">
                     <p>No MCP servers configured</p>
-                    <p className="text-sm mt-2">Click "Add Server" to get started</p>
+                    <p className="text-sm mt-2">{`Click "Add Server" to get started`}</p>
                   </div>
                 )}
                 {servers.map((server) => (
