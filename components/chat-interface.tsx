@@ -258,7 +258,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto flex flex-col h-[calc(100vh-8rem)]">
+    <Card className="w-full max-w-4xl mx-auto flex flex-col h-full">
       <CardHeader className="flex-shrink-0">
         <div className="flex justify-between items-start">
           <CardTitle>AI Agent Chat</CardTitle>
