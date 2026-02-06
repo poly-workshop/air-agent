@@ -44,8 +44,8 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b">
+    <div className="h-screen flex flex-col bg-background">
+      <header className="border-b flex-shrink-0">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">Air Agent</h1>
@@ -62,7 +62,7 @@ export default function Home() {
           </div>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 py-8 overflow-hidden">
         <ChatInterface
           key={mcpConfigKey}
           apiKey={settings.openaiApiKey}
