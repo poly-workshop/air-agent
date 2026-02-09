@@ -34,8 +34,11 @@ import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js"
  * 
  * Note: The protocol version is still negotiated during the initialize handshake
  * (via the request/response body), so this doesn't affect protocol compatibility.
+ * 
+ * @internal This is an implementation detail of McpClient and should not be used directly.
+ * It is exported for testing purposes only.
  */
-class BrowserCompatibleTransport implements Transport {
+export class BrowserCompatibleTransport implements Transport {
   private innerTransport: StreamableHTTPClientTransport
 
   constructor(innerTransport: StreamableHTTPClientTransport) {
