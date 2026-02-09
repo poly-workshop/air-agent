@@ -5,8 +5,9 @@ import { ChevronDown, ChevronRight, Wrench } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { MarkdownRenderer } from "@/components/markdown-renderer"
-import { JsonView, defaultStyles } from "react-json-view-lite"
+import { JsonView, defaultStyles, darkStyles } from "react-json-view-lite"
 import "react-json-view-lite/dist/index.css"
+import { useTheme } from "next-themes"
 
 const MAX_PREVIEW_LENGTH = 100
 
@@ -17,6 +18,10 @@ interface ToolResultProps {
 
 export function ToolResult({ content, name }: ToolResultProps) {
   const [isOpen, setIsOpen] = React.useState(false)
+  const { theme, systemTheme } = useTheme()
+
+  // Determine if we should use dark mode styles
+  const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark")
 
   // Try to parse content as JSON
   const parseJson = (str: string) => {
@@ -78,18 +83,7 @@ export function ToolResult({ content, name }: ToolResultProps) {
               <JsonView 
                 data={jsonData} 
                 shouldExpandNode={(level) => level < 2}
-                style={{
-                  ...defaultStyles,
-                  container: 'font-mono text-xs',
-                  label: 'text-foreground',
-                  nullValue: 'text-muted-foreground',
-                  undefinedValue: 'text-muted-foreground',
-                  numberValue: 'text-blue-600 dark:text-blue-400',
-                  stringValue: 'text-green-600 dark:text-green-400',
-                  booleanValue: 'text-purple-600 dark:text-purple-400',
-                  otherValue: 'text-muted-foreground',
-                  punctuation: 'text-foreground',
-                }}
+                style={isDark ? darkStyles : defaultStyles}
               />
             </div>
           ) : (
