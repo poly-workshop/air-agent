@@ -18,6 +18,7 @@ export class McpClient {
   private transport: StreamableHTTPClientTransport | null = null
   private config: McpServerConfig
   private statusCallback?: (status: McpConnectionStatus, error?: string) => void
+  private sessionId: string | undefined
 
   constructor(
     config: McpServerConfig,
@@ -25,6 +26,8 @@ export class McpClient {
   ) {
     this.config = config
     this.statusCallback = statusCallback
+    // Load session ID from localStorage if available
+    this.loadSessionId()
   }
 
   /**
@@ -51,6 +54,8 @@ export class McpClient {
         requestInit: {
           headers,
         },
+        // Pass stored session ID if available (for session resumption)
+        sessionId: this.sessionId,
       })
 
       // Create MCP client
@@ -69,12 +74,18 @@ export class McpClient {
       // Connect to the server
       try {
         await this.client.connect(this.transport)
+        // Store session ID after successful connection
+        this.sessionId = this.transport.sessionId
+        this.saveSessionId()
       } catch (error) {
         // Some MCP reverse proxies (and MCD's MCP origin) may return 405 to a GET probe
         // while still being usable for Streamable HTTP requests. Ignore 405 to prevent
         // noisy error state + reconnect loops.
         if (isLikely405(error)) {
           this.updateStatus("connected")
+          // Store session ID even for 405 case
+          this.sessionId = this.transport.sessionId
+          this.saveSessionId()
           return
         }
         throw error
@@ -161,6 +172,49 @@ export class McpClient {
    */
   getConfig(): McpServerConfig {
     return this.config
+  }
+
+  /**
+   * Get the current MCP session ID
+   * Returns the session ID assigned by the server after initialization
+   */
+  getSessionId(): string | undefined {
+    return this.sessionId
+  }
+
+  /**
+   * Load session ID from localStorage
+   * Private method called during construction
+   */
+  private loadSessionId(): void {
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      try {
+        const storageKey = `mcp-session-${this.config.url}`
+        const stored = localStorage.getItem(storageKey)
+        if (stored) {
+          this.sessionId = stored
+        }
+      } catch (error) {
+        console.error("Failed to load session ID from localStorage:", error)
+      }
+    }
+  }
+
+  /**
+   * Save session ID to localStorage
+   * Private method called after successful connection
+   */
+  private saveSessionId(): void {
+    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
+      try {
+        const storageKey = `mcp-session-${this.config.url}`
+        if (this.sessionId) {
+          localStorage.setItem(storageKey, this.sessionId)
+        }
+      } catch (error) {
+        console.error("Failed to save session ID to localStorage:", error)
+      }
+    }
   }
 
   private updateStatus(status: McpConnectionStatus, error?: string): void {

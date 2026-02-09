@@ -141,6 +141,23 @@ Since Air Agent is a browser-only application, your MCP server must:
 2. **Enable CORS**: Configure CORS headers to allow browser access from your deployment domain
 3. **Be Publicly Accessible**: The server must be reachable from your browser (localhost won't work for deployed apps)
 
+### Session Management
+
+Air Agent follows the MCP protocol standard for session management:
+
+**How it works:**
+1. When connecting to an MCP server, the client receives a session ID from the server
+2. The session ID is automatically stored in browser localStorage
+3. On reconnection or page reload, the stored session ID is reused to resume the session
+4. The session ID is included in all MCP requests via the `mcp-session-id` header
+
+**Session Persistence:**
+- Sessions persist across page reloads automatically via localStorage
+- Each MCP server URL has its own session ID
+- Session IDs are managed transparently by the client
+
+This enables seamless session resumption without manual intervention.
+
 ### Troubleshooting MCP Connections
 
 **Connection Failed / CORS Error**
