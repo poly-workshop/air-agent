@@ -80,11 +80,16 @@ export class McpClient {
         // noisy error state + reconnect loops.
         if (isLikely405(error)) {
           this.updateStatus("connected")
+          // Store session ID after successful connection
+          this.storeSessionId()
           return
         }
         throw error
       }
       this.updateStatus("connected")
+      
+      // Store session ID after successful connection
+      this.storeSessionId()
     } catch (error) {
       const errorMsg = formatConnectError(error, this.config.url)
       this.updateStatus("error", errorMsg)
@@ -166,6 +171,32 @@ export class McpClient {
    */
   getConfig(): McpServerConfig {
     return this.config
+  }
+
+  /**
+   * Get the current MCP session ID
+   * Returns the session ID assigned by the server after initialization
+   */
+  getSessionId(): string | undefined {
+    return this.transport?.sessionId
+  }
+
+  /**
+   * Store the session ID after connection
+   * This updates the URL with the session ID for persistence across page reloads
+   */
+  private storeSessionId(): void {
+    const sessionId = this.transport?.sessionId
+    if (sessionId && typeof window !== "undefined") {
+      try {
+        // Update URL with session ID without reloading the page
+        const url = new URL(window.location.href)
+        url.searchParams.set("mcp-session-id", sessionId)
+        window.history.replaceState({}, "", url.toString())
+      } catch (error) {
+        console.error("Failed to store session ID in URL:", error)
+      }
+    }
   }
 
   private updateStatus(status: McpConnectionStatus, error?: string): void {

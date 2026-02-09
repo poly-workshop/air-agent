@@ -143,21 +143,30 @@ Since Air Agent is a browser-only application, your MCP server must:
 
 ### Session Management via URL Parameters
 
-Air Agent supports passing MCP session IDs via URL query parameters, which is particularly useful for GitHub Pages deployments and static hosting:
+Air Agent follows the MCP protocol standard for session management:
 
-**Usage:**
+**Automatic Session Handling:**
+- When connecting to an MCP server, the client receives a session ID from the server
+- This session ID is automatically stored in the URL (e.g., `?mcp-session-id=abc-123`)
+- The session ID is included in all subsequent MCP requests via the `mcp-session-id` header
+- Sessions persist across page reloads by reading the session ID from the URL
+
+**Manual Session ID:**
+You can also manually specify a session ID in the URL:
 ```
 https://your-deployment.github.io/air-agent/?mcp-session-id=your-session-id-here
 ```
 
-When a session ID is present in the URL:
-- The MCP client will use this session ID when connecting to the server
-- This allows you to resume existing sessions or share session links
-- The session ID will be included in the `mcp-session-id` header for all MCP requests
+**How it works:**
+1. On first connection, if no session ID is in the URL, a new session is created by the server
+2. The server returns a session ID in the response headers
+3. Air Agent automatically adds this session ID to the URL for persistence
+4. On page reload, the session ID from the URL is used to resume the session
+5. All MCP requests include the session ID in the `mcp-session-id` header
 
 **Example Use Cases:**
-- Resuming a session after page reload
-- Sharing a specific MCP session with others
+- Automatic session persistence across page reloads
+- Sharing specific MCP sessions with others via URL
 - Integrating with external systems that generate session IDs
 
 ### Troubleshooting MCP Connections
