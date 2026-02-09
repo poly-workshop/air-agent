@@ -7,8 +7,9 @@
  * Session Management:
  * - Session IDs are received from the MCP server via the 'mcp-session-id' response header
  * - The session ID is read after the initial connection request and after each subsequent request
- * - Session IDs are persisted in localStorage for session resumption across page reloads
+ * - Session IDs are stored in memory for the duration of the page session
  * - The underlying transport automatically includes the session ID in request headers
+ * - Note: Session resumption across page loads is not supported
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client"
@@ -32,8 +33,8 @@ export class McpClient {
   ) {
     this.config = config
     this.statusCallback = statusCallback
-    // Load session ID from localStorage if available
-    this.loadSessionId()
+    // Note: Session IDs are not persisted across page loads
+    // Each connection will generate a new session ID
   }
 
   /**
@@ -60,8 +61,9 @@ export class McpClient {
         requestInit: {
           headers,
         },
-        // Pass stored session ID if available (for session resumption)
-        sessionId: this.sessionId,
+        // Don't pass stored session ID - always start fresh
+        // The server will generate a new session ID during initialization
+        // Note: Session resumption across page loads is not supported by most MCP servers
       })
 
       // Create MCP client
@@ -85,7 +87,6 @@ export class McpClient {
         const receivedSessionId = this.transport.sessionId
         if (receivedSessionId) {
           this.sessionId = receivedSessionId
-          this.saveSessionId()
           console.log(`MCP session established with ID from server: ${receivedSessionId.substring(0, 8)}...`)
         } else {
           console.warn("Warning: No session ID received from MCP server in response header")
@@ -100,7 +101,6 @@ export class McpClient {
           const receivedSessionId = this.transport.sessionId
           if (receivedSessionId) {
             this.sessionId = receivedSessionId
-            this.saveSessionId()
             console.log(`MCP session established (405 ignored) with ID from server: ${receivedSessionId.substring(0, 8)}...`)
           }
           return
@@ -151,7 +151,6 @@ export class McpClient {
       if (this.transport?.sessionId && this.transport.sessionId !== this.sessionId) {
         console.log(`MCP session ID updated from server: ${this.transport.sessionId.substring(0, 8)}...`)
         this.sessionId = this.transport.sessionId
-        this.saveSessionId()
       }
       
       return result.tools.map((tool) => ({
@@ -185,7 +184,6 @@ export class McpClient {
       if (this.transport?.sessionId && this.transport.sessionId !== this.sessionId) {
         console.log(`MCP session ID updated from server: ${this.transport.sessionId.substring(0, 8)}...`)
         this.sessionId = this.transport.sessionId
-        this.saveSessionId()
       }
       
       return result.content
@@ -215,41 +213,6 @@ export class McpClient {
    */
   getSessionId(): string | undefined {
     return this.sessionId
-  }
-
-  /**
-   * Load session ID from localStorage
-   * Private method called during construction
-   */
-  private loadSessionId(): void {
-    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
-      try {
-        const storageKey = `mcp-session-${this.config.url}`
-        const stored = localStorage.getItem(storageKey)
-        if (stored) {
-          this.sessionId = stored
-        }
-      } catch (error) {
-        console.error("Failed to load session ID from localStorage:", error)
-      }
-    }
-  }
-
-  /**
-   * Save session ID to localStorage
-   * Private method called after successful connection
-   */
-  private saveSessionId(): void {
-    if (typeof window !== "undefined" && typeof localStorage !== "undefined") {
-      try {
-        const storageKey = `mcp-session-${this.config.url}`
-        if (this.sessionId) {
-          localStorage.setItem(storageKey, this.sessionId)
-        }
-      } catch (error) {
-        console.error("Failed to save session ID to localStorage:", error)
-      }
-    }
   }
 
   private updateStatus(status: McpConnectionStatus, error?: string): void {
