@@ -93,8 +93,7 @@ class BrowserCompatibleTransport implements Transport {
  */
 export class McpClient {
   private client: Client | null = null
-  private transport: StreamableHTTPClientTransport | null = null
-  private wrappedTransport: BrowserCompatibleTransport | null = null
+  private transport: BrowserCompatibleTransport | null = null
   private config: McpServerConfig
   private statusCallback?: (status: McpConnectionStatus, error?: string) => void
   private sessionId: string | undefined
@@ -129,7 +128,7 @@ export class McpClient {
       // MCD's MCP doc uses the origin URL directly (e.g. https://mcp.mcd.cn).
       // Some deployments may respond 405 for GET /; we treat that as ignorable.
       const effectiveUrl = normalizeMcpEndpointUrl(this.config.url)
-      this.transport = new StreamableHTTPClientTransport(new URL(effectiveUrl), {
+      const innerTransport = new StreamableHTTPClientTransport(new URL(effectiveUrl), {
         requestInit: {
           headers,
         },
@@ -140,7 +139,7 @@ export class McpClient {
 
       // Wrap transport to prevent mcp-protocol-version header from being sent
       // This avoids CORS preflight issues with servers that don't properly configure CORS
-      this.wrappedTransport = new BrowserCompatibleTransport(this.transport)
+      this.transport = new BrowserCompatibleTransport(innerTransport)
 
       // Create MCP client
       this.client = new Client(
@@ -157,9 +156,9 @@ export class McpClient {
 
       // Connect to the server using the wrapped transport
       try {
-        await this.client.connect(this.wrappedTransport)
+        await this.client.connect(this.transport)
         // Read session ID from response header (set by the transport after initial request)
-        // The transport receives the mcp-session-id header from the server and stores it
+        // The transport wrapper delegates sessionId to the inner transport
         const receivedSessionId = this.transport.sessionId
         if (receivedSessionId) {
           this.sessionId = receivedSessionId
@@ -200,13 +199,10 @@ export class McpClient {
         await this.client.close()
         this.client = null
       }
-      if (this.wrappedTransport) {
-        // Close the wrapper, which delegates to the inner transport
-        await this.wrappedTransport.close()
-        this.wrappedTransport = null
+      if (this.transport) {
+        await this.transport.close()
+        this.transport = null
       }
-      // Clear the inner transport reference (already closed via wrapper)
-      this.transport = null
       this.updateStatus("disconnected")
     } catch (error) {
       console.error("Error disconnecting from MCP server:", error)
