@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# MCP server API route (opt-in, not included by default)
+# Create manually to enable MCP server - see server/mcp/README.md
+/app/api/mcp/

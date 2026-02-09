@@ -187,7 +187,7 @@ See [TOOL_IMPLEMENTATION.md](./TOOL_IMPLEMENTATION.md) for detailed documentatio
 
 Air Agent includes a built-in MCP server that exposes tools and capabilities via the MCP HTTP transport protocol. This allows external MCP-compliant clients to connect to Air Agent and use its tools.
 
-**Note:** The MCP server requires Node.js runtime and is available when running `npm run dev` or when deployed to Node.js platforms (Vercel, Netlify, etc.). It is **not available** in static export mode (GitHub Pages).
+**Note:** The MCP server is **opt-in** and requires manual setup. It works when running `npm run dev` or when deployed to Node.js platforms (Vercel, Netlify, etc.). It is **not available** in static export mode (GitHub Pages).
 
 ### MCP Server Features
 
@@ -200,12 +200,26 @@ Air Agent includes a built-in MCP server that exposes tools and capabilities via
 
 ### Enabling the MCP Server
 
-**Development:**
+To enable the MCP server, you need to manually create the API route:
+
+**1. Create the API route:**
+```bash
+mkdir -p app/api/mcp
+cat > app/api/mcp/route.ts << 'EOF'
+import { handleMcpRequest } from "@/server/mcp/handler"
+
+export const GET = handleMcpRequest
+export const POST = handleMcpRequest
+export const DELETE = handleMcpRequest
+EOF
+```
+
+**2. Run in development:**
 ```bash
 npm run dev
 ```
 
-**Production (Node.js platforms):**
+**3. Or deploy to Node.js platforms:**
 ```bash
 npm run build
 npm run start

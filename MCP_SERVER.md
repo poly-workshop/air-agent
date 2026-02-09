@@ -58,14 +58,19 @@ npm run start
 
 ### Static Export (No MCP Server)
 
-For static deployment (GitHub Pages, S3, etc.):
+For static deployment (GitHub Pages, S3, etc.), you need to remove the API route before building:
 
 ```bash
-# Default build - MCP server is not included
-npm run build
+# Remove the API route (if it exists)
+rm -rf app/api/mcp
+
+# Build for static export
+STATIC_EXPORT=true npm run build
 ```
 
 The static export will work but `/api/mcp` will not be available. The client-side MCP functionality (connecting to external MCP servers) will still work.
+
+**Important:** The API route is intentionally NOT included in the repository by default. You need to create it manually when you want to enable the MCP server. This prevents issues with static builds.
 
 ## MCP HTTP Transport
 
