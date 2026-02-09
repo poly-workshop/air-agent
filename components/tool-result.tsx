@@ -8,6 +8,8 @@ import { MarkdownRenderer } from "@/components/markdown-renderer"
 import { JsonView, defaultStyles } from "react-json-view-lite"
 import "react-json-view-lite/dist/index.css"
 
+const MAX_PREVIEW_LENGTH = 100
+
 interface ToolResultProps {
   content: string
   name?: string
@@ -31,15 +33,18 @@ export function ToolResult({ content, name }: ToolResultProps) {
   // Get preview text - first 100 chars or first line
   const getPreview = () => {
     if (isJson) {
-      const keys = Object.keys(jsonData)
-      if (keys.length === 0) return "{}"
       if (Array.isArray(jsonData)) {
         return `Array (${jsonData.length} items)`
       }
+      if (jsonData === null || typeof jsonData !== 'object') {
+        return String(jsonData)
+      }
+      const keys = Object.keys(jsonData)
+      if (keys.length === 0) return "{}"
       return `Object (${keys.length} keys)`
     }
     const firstLine = content.split('\n')[0]
-    return firstLine.length > 100 ? firstLine.substring(0, 100) + '...' : firstLine
+    return firstLine.length > MAX_PREVIEW_LENGTH ? firstLine.substring(0, MAX_PREVIEW_LENGTH) + '...' : firstLine
   }
 
   return (
