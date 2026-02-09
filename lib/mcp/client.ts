@@ -3,6 +3,12 @@
  * 
  * This provides a simplified interface for connecting to MCP servers
  * from the browser using HTTP/SSE transport.
+ * 
+ * Session Management:
+ * - Session IDs are received from the MCP server via the 'mcp-session-id' response header
+ * - The session ID is read after the initial connection request and after each subsequent request
+ * - Session IDs are persisted in localStorage for session resumption across page reloads
+ * - The underlying transport automatically includes the session ID in request headers
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client"
@@ -74,18 +80,29 @@ export class McpClient {
       // Connect to the server
       try {
         await this.client.connect(this.transport)
-        // Store session ID after successful connection
-        this.sessionId = this.transport.sessionId
-        this.saveSessionId()
+        // Read session ID from response header (set by the transport after initial request)
+        // The transport receives the mcp-session-id header from the server and stores it
+        const receivedSessionId = this.transport.sessionId
+        if (receivedSessionId) {
+          this.sessionId = receivedSessionId
+          this.saveSessionId()
+          console.log(`MCP session established with ID from server: ${receivedSessionId.substring(0, 8)}...`)
+        } else {
+          console.warn("Warning: No session ID received from MCP server in response header")
+        }
       } catch (error) {
         // Some MCP reverse proxies (and MCD's MCP origin) may return 405 to a GET probe
         // while still being usable for Streamable HTTP requests. Ignore 405 to prevent
         // noisy error state + reconnect loops.
         if (isLikely405(error)) {
           this.updateStatus("connected")
-          // Store session ID even for 405 case
-          this.sessionId = this.transport.sessionId
-          this.saveSessionId()
+          // Read session ID from response header even for 405 case
+          const receivedSessionId = this.transport.sessionId
+          if (receivedSessionId) {
+            this.sessionId = receivedSessionId
+            this.saveSessionId()
+            console.log(`MCP session established (405 ignored) with ID from server: ${receivedSessionId.substring(0, 8)}...`)
+          }
           return
         }
         throw error
@@ -128,6 +145,15 @@ export class McpClient {
 
     try {
       const result = await this.client.listTools()
+      
+      // Read session ID from response header after each request
+      // The server may send an updated session ID in the response
+      if (this.transport?.sessionId && this.transport.sessionId !== this.sessionId) {
+        console.log(`MCP session ID updated from server: ${this.transport.sessionId.substring(0, 8)}...`)
+        this.sessionId = this.transport.sessionId
+        this.saveSessionId()
+      }
+      
       return result.tools.map((tool) => ({
         name: tool.name,
         description: tool.description || "",
@@ -153,6 +179,15 @@ export class McpClient {
 
     try {
       const result = await this.client.callTool({ name, arguments: args })
+      
+      // Read session ID from response header after each request
+      // The server may send an updated session ID in the response
+      if (this.transport?.sessionId && this.transport.sessionId !== this.sessionId) {
+        console.log(`MCP session ID updated from server: ${this.transport.sessionId.substring(0, 8)}...`)
+        this.sessionId = this.transport.sessionId
+        this.saveSessionId()
+      }
+      
       return result.content
     } catch (error) {
       console.error("Error calling tool:", error)
