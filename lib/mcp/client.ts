@@ -10,6 +10,12 @@
  * - Session IDs are stored in memory for the duration of the browser session (while page is loaded)
  * - The underlying transport automatically includes the session ID in request headers
  * - Note: Session persistence across page reloads is not supported
+ * 
+ * CORS Compatibility:
+ * - Uses BrowserCompatibleTransport wrapper to prevent mcp-protocol-version header from being sent
+ * - This avoids CORS preflight requests that many MCP servers don't handle properly
+ * - Protocol version is still negotiated via the initialize request/response body
+ * - Maintains full MCP protocol compatibility while improving browser compatibility
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client"

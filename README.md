@@ -164,6 +164,7 @@ This enables seamless session resumption without manual intervention.
 - Ensure your MCP server has CORS properly configured
 - Check that the server URL is correct and publicly accessible
 - Verify that the server supports the Streamable HTTP transport
+- **Note**: Air Agent automatically handles CORS preflight issues by not sending the `mcp-protocol-version` header in subsequent requests. This prevents CORS preflight failures with servers that don't properly configure CORS for custom headers, while maintaining full MCP protocol compatibility.
 
 **Tools Not Appearing**
 - Make sure the MCP server is enabled in the configuration
