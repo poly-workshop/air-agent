@@ -16,6 +16,74 @@ import { Client } from "@modelcontextprotocol/sdk/client"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
 import { McpServerConfig, McpConnectionStatus, McpTool } from "./types"
 import { Tool } from "../tools"
+import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js"
+import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js"
+
+/**
+ * Transport wrapper that prevents the mcp-protocol-version header from being sent.
+ * 
+ * This is necessary to avoid CORS preflight issues with some MCP servers that don't
+ * properly configure CORS for custom headers. By preventing the protocol version
+ * header from being sent, we avoid triggering CORS preflight requests.
+ * 
+ * Note: The protocol version is still negotiated during the initialize handshake
+ * (via the request/response body), so this doesn't affect protocol compatibility.
+ */
+class BrowserCompatibleTransport implements Transport {
+  private innerTransport: StreamableHTTPClientTransport
+
+  constructor(innerTransport: StreamableHTTPClientTransport) {
+    this.innerTransport = innerTransport
+  }
+
+  async start(): Promise<void> {
+    return this.innerTransport.start()
+  }
+
+  async send(message: JSONRPCMessage | JSONRPCMessage[]): Promise<void> {
+    return this.innerTransport.send(message)
+  }
+
+  async close(): Promise<void> {
+    return this.innerTransport.close()
+  }
+
+  set onclose(handler: (() => void) | undefined) {
+    this.innerTransport.onclose = handler
+  }
+
+  get onclose(): (() => void) | undefined {
+    return this.innerTransport.onclose
+  }
+
+  set onerror(handler: ((error: Error) => void) | undefined) {
+    this.innerTransport.onerror = handler
+  }
+
+  get onerror(): ((error: Error) => void) | undefined {
+    return this.innerTransport.onerror
+  }
+
+  set onmessage(handler: ((message: JSONRPCMessage) => void) | undefined) {
+    this.innerTransport.onmessage = handler
+  }
+
+  get onmessage(): ((message: JSONRPCMessage) => void) | undefined {
+    return this.innerTransport.onmessage
+  }
+
+  get sessionId(): string | undefined {
+    return this.innerTransport.sessionId
+  }
+
+  // Intentionally NOT implementing setProtocolVersion to prevent the
+  // mcp-protocol-version header from being added to requests.
+  // This avoids CORS preflight issues with servers that don't properly
+  // configure CORS for custom headers.
+  // setProtocolVersion(version: string): void {
+  //   // No-op: Don't set protocol version to avoid CORS issues
+  // }
+}
 
 /**
  * MCP Client wrapper for browser use
@@ -23,6 +91,7 @@ import { Tool } from "../tools"
 export class McpClient {
   private client: Client | null = null
   private transport: StreamableHTTPClientTransport | null = null
+  private wrappedTransport: BrowserCompatibleTransport | null = null
   private config: McpServerConfig
   private statusCallback?: (status: McpConnectionStatus, error?: string) => void
   private sessionId: string | undefined
@@ -66,6 +135,10 @@ export class McpClient {
         // Note: Session resumption across page loads is not supported by most MCP servers
       })
 
+      // Wrap transport to prevent mcp-protocol-version header from being sent
+      // This avoids CORS preflight issues with servers that don't properly configure CORS
+      this.wrappedTransport = new BrowserCompatibleTransport(this.transport)
+
       // Create MCP client
       this.client = new Client(
         {
@@ -79,9 +152,9 @@ export class McpClient {
         }
       )
 
-      // Connect to the server
+      // Connect to the server using the wrapped transport
       try {
-        await this.client.connect(this.transport)
+        await this.client.connect(this.wrappedTransport)
         // Read session ID from response header (set by the transport after initial request)
         // The transport receives the mcp-session-id header from the server and stores it
         const receivedSessionId = this.transport.sessionId
@@ -124,8 +197,12 @@ export class McpClient {
         await this.client.close()
         this.client = null
       }
+      if (this.wrappedTransport) {
+        await this.wrappedTransport.close()
+        this.wrappedTransport = null
+      }
       if (this.transport) {
-        await this.transport.close()
+        // Transport is already closed via wrappedTransport, just clear the reference
         this.transport = null
       }
       this.updateStatus("disconnected")
