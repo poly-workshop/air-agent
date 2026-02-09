@@ -43,6 +43,9 @@ export class McpClient {
         headers["Authorization"] = `Bearer ${this.config.apiKey}`
       }
 
+      // Get session ID from URL query parameters if available (for GitHub Pages static deployment)
+      const sessionId = getSessionIdFromUrl()
+
       // Create Streamable HTTP transport
       // MCD's MCP doc uses the origin URL directly (e.g. https://mcp.mcd.cn).
       // Some deployments may respond 405 for GET /; we treat that as ignorable.
@@ -51,6 +54,8 @@ export class McpClient {
         requestInit: {
           headers,
         },
+        // Pass session ID if available from URL
+        ...(sessionId ? { sessionId } : {}),
       })
 
       // Create MCP client
@@ -167,6 +172,23 @@ export class McpClient {
     if (this.statusCallback) {
       this.statusCallback(status, error)
     }
+  }
+}
+
+/**
+ * Get session ID from URL query parameters
+ * Supports reading mcp-session-id from URL for GitHub Pages static deployment
+ */
+function getSessionIdFromUrl(): string | undefined {
+  if (typeof window === "undefined") {
+    return undefined
+  }
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search)
+    return urlParams.get("mcp-session-id") || undefined
+  } catch {
+    return undefined
   }
 }
 
