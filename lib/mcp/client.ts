@@ -186,7 +186,7 @@ function getSessionIdFromUrl(): string | undefined {
 
   try {
     const urlParams = new URLSearchParams(window.location.search)
-    return urlParams.get("mcp-session-id") || undefined
+    return urlParams.get("mcp-session-id") ?? undefined
   } catch {
     return undefined
   }
