@@ -80,14 +80,13 @@ export class McpClient {
         // noisy error state + reconnect loops.
         if (isLikely405(error)) {
           this.updateStatus("connected")
-          // Store session ID after successful connection
+          // Store session ID after successful connection (even for 405 case)
           this.storeSessionId()
           return
         }
         throw error
       }
       this.updateStatus("connected")
-      
       // Store session ID after successful connection
       this.storeSessionId()
     } catch (error) {
