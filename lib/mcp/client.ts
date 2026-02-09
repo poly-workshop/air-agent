@@ -7,9 +7,9 @@
  * Session Management:
  * - Session IDs are received from the MCP server via the 'mcp-session-id' response header
  * - The session ID is read after the initial connection request and after each subsequent request
- * - Session IDs are stored in memory for the duration of the page session
+ * - Session IDs are stored in memory for the duration of the browser session (while page is loaded)
  * - The underlying transport automatically includes the session ID in request headers
- * - Note: Session resumption across page loads is not supported
+ * - Note: Session persistence across page reloads is not supported
  */
 
 import { Client } from "@modelcontextprotocol/sdk/client"
@@ -33,8 +33,8 @@ export class McpClient {
   ) {
     this.config = config
     this.statusCallback = statusCallback
-    // Note: Session IDs are not persisted across page loads
-    // Each connection will generate a new session ID
+    // Note: Session IDs are not persisted across page reloads
+    // Each new page load will establish a fresh connection with a new session ID
   }
 
   /**
