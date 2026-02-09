@@ -8,13 +8,13 @@ A static AI agent chat interface with direct client-side OpenAI API integration.
 - 🛠️ **Automatic Tool Calling** - AI can automatically use tools/functions with streaming responses
 - 📊 **Built-in Tools** - Calculator, time, weather (mock), and easy to add custom tools
 - 🔄 **Streaming Responses** - Real-time streaming of AI responses
-- 🔌 **MCP Support** - Full Model Context Protocol integration for browser-based tool discovery
+- 🔌 **MCP Client Support** - Full Model Context Protocol integration for browser-based tool discovery
 - 🌐 **MCP Server Configuration** - Configure and manage MCP servers directly in the browser
 - 🎛️ **Per-Chat MCP Control** - Enable/disable MCP and select servers per conversation
+- 🖥️ **Built-in MCP Server** - Expose tools via MCP HTTP transport with compliant session management
 - 🎨 **Theme Support** - Light, Dark, and System themes (similar to shadcn.com/create)
 - ⚙️ **Configurable Settings** - API key, base URL, and model selection
 - 💾 **Local Storage** - All settings stored in browser localStorage
-- 📦 **No Backend Required** - Fully static site deployable to GitHub Pages
 - 🎯 **Modern UI** - Built with shadcn/ui components
 
 ## Screenshots
@@ -182,6 +182,85 @@ See [TOOL_IMPLEMENTATION.md](./TOOL_IMPLEMENTATION.md) for detailed documentatio
 - MCP (Model Context Protocol) compatibility
 - Tool architecture and API
 - Best practices and examples
+
+## MCP Server
+
+Air Agent includes a built-in MCP server that exposes tools and capabilities via the MCP HTTP transport protocol. This allows external MCP-compliant clients to connect to Air Agent and use its tools.
+
+**Note:** The MCP server requires Node.js runtime and is available when running `npm run dev` or when deployed to Node.js platforms (Vercel, Netlify, etc.). It is **not available** in static export mode (GitHub Pages).
+
+### MCP Server Features
+
+- ✅ **MCP HTTP Transport Compliant** - Follows the official MCP specification
+- ✅ **Stateful Session Management** - Secure session handling with unique session IDs
+- ✅ **Descriptive Error Messages** - Clear, actionable error messages for integration issues
+- ✅ **SSE Streaming Support** - Server-sent events for real-time notifications
+- ✅ **Tool Discovery** - Clients can discover and call available tools
+- ✅ **Session Lifecycle Management** - Proper initialization, usage, and cleanup
+
+### Enabling the MCP Server
+
+**Development:**
+```bash
+npm run dev
+```
+
+**Production (Node.js platforms):**
+```bash
+npm run build
+npm run start
+```
+
+### MCP Server Endpoint
+
+When running locally:
+```
+http://localhost:3000/api/mcp
+```
+
+When deployed to Node.js platforms:
+```
+https://your-domain.com/api/mcp
+```
+
+### Quick Start
+
+1. **Initialize a session:**
+```bash
+curl -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -D - \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"my-client","version":"1.0.0"}}}'
+```
+
+2. **Save the `Mcp-Session-Id` from the response headers**
+
+3. **List available tools:**
+```bash
+curl -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -H "Mcp-Session-Id: <your-session-id>" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
+```
+
+4. **Call a tool:**
+```bash
+curl -X POST http://localhost:3000/api/mcp \
+  -H "Content-Type: application/json" \
+  -H "Mcp-Session-Id: <your-session-id>" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"greet","arguments":{"name":"Alice"}}}'
+```
+
+### Documentation
+
+For complete documentation including:
+- Session management lifecycle
+- Error handling and troubleshooting
+- All available tools
+- Integration examples
+- Security considerations
+
+See [MCP_SERVER.md](./MCP_SERVER.md)
 
 ## Deployment
 
