@@ -141,33 +141,22 @@ Since Air Agent is a browser-only application, your MCP server must:
 2. **Enable CORS**: Configure CORS headers to allow browser access from your deployment domain
 3. **Be Publicly Accessible**: The server must be reachable from your browser (localhost won't work for deployed apps)
 
-### Session Management via URL Parameters
+### Session Management
 
 Air Agent follows the MCP protocol standard for session management:
 
-**Automatic Session Handling:**
-- When connecting to an MCP server, the client receives a session ID from the server
-- This session ID is automatically stored in the URL (e.g., `?mcp-session-id=abc-123`)
-- The session ID is included in all subsequent MCP requests via the `mcp-session-id` header
-- Sessions persist across page reloads by reading the session ID from the URL
-
-**Manual Session ID:**
-You can also manually specify a session ID in the URL:
-```
-https://your-deployment.github.io/air-agent/?mcp-session-id=your-session-id-here
-```
-
 **How it works:**
-1. On first connection, if no session ID is in the URL, a new session is created by the server
-2. The server returns a session ID in the response headers
-3. Air Agent automatically adds this session ID to the URL for persistence
-4. On page reload, the session ID from the URL is used to resume the session
-5. All MCP requests include the session ID in the `mcp-session-id` header
+1. When connecting to an MCP server, the client receives a session ID from the server
+2. The session ID is automatically stored in browser localStorage
+3. On reconnection or page reload, the stored session ID is reused to resume the session
+4. The session ID is included in all MCP requests via the `mcp-session-id` header
 
-**Example Use Cases:**
-- Automatic session persistence across page reloads
-- Sharing specific MCP sessions with others via URL
-- Integrating with external systems that generate session IDs
+**Session Persistence:**
+- Sessions persist across page reloads automatically via localStorage
+- Each MCP server URL has its own session ID
+- Session IDs are managed transparently by the client
+
+This enables seamless session resumption without manual intervention.
 
 ### Troubleshooting MCP Connections
 
