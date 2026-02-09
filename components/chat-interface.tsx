@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { McpToggle } from "@/components/mcp-toggle"
 import { MarkdownRenderer } from "@/components/markdown-renderer"
+import { ToolResult } from "@/components/tool-result"
 
 import { DEFAULT_MODEL, DEFAULT_BASE_URL, MCP_SETTINGS_KEY } from "@/lib/constants"
 import { AiSdkService } from "@/lib/ai-sdk"
@@ -318,15 +319,7 @@ export function ChatInterface({ apiKey, baseUrl, model }: ChatInterfaceProps) {
                   }`}
                 >
                   {message.role === "tool" ? (
-                  <div className="text-xs text-muted-foreground">
-                  <Badge variant="outline" className="mb-1">
-                  <Wrench className="h-3 w-3 mr-1" />
-                  Tool Result
-                  </Badge>
-                  <div className="mt-1">
-                  <MarkdownRenderer content={message.content} isUserMessage={false} />
-                  </div>
-                  </div>
+                  <ToolResult content={message.content} name={message.name} />
                   ) : (
                   <>
                   <div>
