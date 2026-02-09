@@ -48,7 +48,7 @@ This design allows you to:
 To deploy with MCP server support:
 
 1. Create the API route as shown above
-2. Remove `output: 'export'` from `next.config.ts` or set `MCP_SERVER_ENABLED=true`
+2. Do NOT set `STATIC_EXPORT=true` (leave it unset or false)
 3. Deploy to a Node.js platform (Vercel, Netlify, Railway, etc.)
 
 ```bash
@@ -534,7 +534,7 @@ async with Client(
 
 ## Extending the Server
 
-To add more tools to the MCP server, edit `/app/api/mcp/route.ts`:
+To add more tools to the MCP server, edit `server/mcp/handler.ts` and modify the `createMcpServer()` function:
 
 ```typescript
 function createMcpServer(): McpServer {

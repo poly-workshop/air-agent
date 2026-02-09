@@ -104,8 +104,8 @@ export async function handleMcpRequest(req: NextRequest): Promise<Response> {
 
   try {
     // Create or get transport for this session
-    let sessionId = req.headers.get("mcp-session-id")
-    let existingSession = sessionId ? activeSessions.get(sessionId) : null
+    const sessionId = req.headers.get("mcp-session-id")
+    const existingSession = sessionId ? activeSessions.get(sessionId) : null
 
     // For initialization requests, create a new server instance
     if (method === "POST") {
@@ -115,7 +115,7 @@ export async function handleMcpRequest(req: NextRequest): Promise<Response> {
       const isInitialization =
         body?.method === "initialize" ||
         (Array.isArray(body) &&
-          body.some((msg: any) => msg?.method === "initialize"))
+          body.some((msg: { method?: string }) => msg?.method === "initialize"))
 
       if (isInitialization) {
         // Create new server and transport for this session
