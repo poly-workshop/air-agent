@@ -21,7 +21,8 @@ export function ToolResult({ content, name }: ToolResultProps) {
   const { theme, systemTheme } = useTheme()
 
   // Determine if we should use dark mode styles
-  const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark")
+  // Add fallback to handle undefined during SSR/initial render
+  const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark") || false
 
   // Try to parse content as JSON
   const parseJson = (str: string) => {
