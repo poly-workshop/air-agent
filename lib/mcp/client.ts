@@ -86,9 +86,6 @@ class BrowserCompatibleTransport implements Transport {
   // mcp-protocol-version header from being added to requests.
   // This avoids CORS preflight issues with servers that don't properly
   // configure CORS for custom headers.
-  // setProtocolVersion(version: string): void {
-  //   // No-op: Don't set protocol version to avoid CORS issues
-  // }
 }
 
 /**
@@ -204,13 +201,12 @@ export class McpClient {
         this.client = null
       }
       if (this.wrappedTransport) {
+        // Close the wrapper, which delegates to the inner transport
         await this.wrappedTransport.close()
         this.wrappedTransport = null
       }
-      if (this.transport) {
-        // Transport is already closed via wrappedTransport, just clear the reference
-        this.transport = null
-      }
+      // Clear the inner transport reference (already closed via wrapper)
+      this.transport = null
       this.updateStatus("disconnected")
     } catch (error) {
       console.error("Error disconnecting from MCP server:", error)
