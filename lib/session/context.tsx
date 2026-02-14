@@ -23,7 +23,7 @@ interface SessionContextValue {
   deleteSession: (id: string) => Promise<void>
   setActiveSession: (id: string) => void
   clearActiveSession: () => void
-  addMessage: (message: SessionMessage) => Promise<void>
+  addMessage: (message: SessionMessage, sessionId?: string) => Promise<void>
   updateSessionTitle: (id: string, title: string) => Promise<void>
 }
 
@@ -112,15 +112,15 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }, [syncState])
 
   const addMessage = useCallback(
-    async (message: SessionMessage): Promise<void> => {
+    async (message: SessionMessage, sessionId?: string): Promise<void> => {
       const mgr = managerRef.current
       if (!mgr) return
-      const currentId = mgr.activeSessionId
-      if (!currentId) {
+      const targetId = sessionId ?? mgr.activeSessionId
+      if (!targetId) {
         console.warn("[SessionContext] No active session to add message to")
         return
       }
-      await mgr.addMessage(currentId, message)
+      await mgr.addMessage(targetId, message)
       syncState()
     },
     [syncState]

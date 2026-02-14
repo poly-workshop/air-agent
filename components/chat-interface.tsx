@@ -221,6 +221,10 @@ export function ChatInterface({
   const sendMessage = React.useCallback(async (messageContent: string) => {
     if (!messageContent.trim() || !apiKey || !activeSessionId) return
 
+    // Capture the session ID at send time to avoid race conditions
+    // when the user switches sessions while AI is still generating
+    const targetSessionId = activeSessionId
+
     const userMessage: Message = {
       id: crypto.randomUUID(),
       role: "user",
@@ -229,13 +233,13 @@ export function ChatInterface({
 
     // Persist user message to session (Req 7.5: don't persist system messages)
     const userSessionMsg = toSessionMessage(userMessage)
-    await addMessage(userSessionMsg)
+    await addMessage(userSessionMsg, targetSessionId)
 
     // Auto-generate title if this is the first message in the session
     const isFirstMessage = persistedMessages.length === 0
     if (isFirstMessage) {
       const title = generateTitleFromMessage(messageContent.trim())
-      await updateSessionTitle(activeSessionId, title)
+      await updateSessionTitle(targetSessionId, title)
     }
 
     setIsLoading(true)
@@ -374,14 +378,14 @@ export function ChatInterface({
           content: phaseThought,
           type: "transitive-thought",
         })
-        await addMessage(thoughtSessionMsg)
+        await addMessage(thoughtSessionMsg, targetSessionId)
       }
 
       // Persist all final messages to session (Req 7.4: only after streaming completes)
       // Req 7.5: don't persist system messages
       for (const msg of finalMessages) {
         if (msg.role !== "system") {
-          await addMessage(toSessionMessage(msg))
+          await addMessage(toSessionMessage(msg), targetSessionId)
         }
       }
 
