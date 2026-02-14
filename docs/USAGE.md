@@ -2,84 +2,111 @@
 
 ## Quick Start
 
-1. **Open the Application**
-   - Visit the deployed site at `https://poly-workshop.github.io/air-agent/`
-   - Or run locally with `npm run dev`
+1. **打开应用**
+   - 访问部署站点 `https://poly-workshop.github.io/air-agent/`
+   - 或本地运行 `npm run dev`
 
-2. **Configure Settings**
-   - Click the settings icon (⚙️) in the top right corner
-   - Enter your OpenAI API key (required)
-   - Optionally configure:
-     - Model (GPT-4o, GPT-4o Mini, GPT-4 Turbo, GPT-4, GPT-3.5 Turbo)
-     - Base URL (for custom OpenAI-compatible endpoints)
-   - Click "Save Settings"
+2. **配置设置**
+   - 点击顶部设置图标（⚙️）
+   - 输入 OpenAI API Key（必填）
+   - 可选配置：
+     - 模型（GPT-4o, GPT-4o Mini, GPT-4 Turbo, GPT-4, GPT-3.5 Turbo）
+     - Base URL（自定义 OpenAI 兼容端点）
+     - 系统提示词
+     - Transitive Thinking 开关
+     - 内置工具启用/禁用
+   - 点击保存
 
-3. **Start Chatting**
-   - Type your message in the input field
-   - Press Enter or click the send button
-   - The AI will respond to your message
+3. **开始聊天**
+   - 在创建页面选择推荐问题卡片，或输入自定义问题
+   - 系统自动创建新 Session 并发送消息
+   - AI 会以流式方式回复
 
-## Features
+## Session 管理
 
-### Theme Customization
+### 创建新会话
 
-- Light theme for bright environments
-- Dark theme for low-light environments
-- System theme to match your OS settings
-- Change themes anytime from the settings dialog
+- 点击侧边栏顶部的"新建会话"按钮
+- 或在 Session 创建页面选择推荐问题 / 输入自定义问题
+- 第一条消息发送后会自动生成会话标题
 
-### Persistent Settings
+### 切换会话
 
-All your settings are saved in your browser's localStorage:
+- 在左侧侧边栏点击任意会话即可切换
+- 会话列表按最后更新时间降序排列
+- 当前活跃会话高亮显示
 
-- API credentials never leave your browser
-- Settings persist across sessions
-- Clear your browser data to reset
+### 删除会话
 
-### Model Selection
+- 鼠标悬停在会话条目上，点击出现的删除图标
+- 删除当前活跃会话后自动切换到最近更新的其他会话
+- 删除最后一个会话后进入创建页面
 
-Choose the model that fits your needs:
+### 侧边栏折叠
 
-- **GPT-4o**: Latest and most capable model
-- **GPT-4o Mini**: Fast and cost-effective
-- **GPT-4 Turbo**: Large context window
-- **GPT-4**: High-quality responses
-- **GPT-3.5 Turbo**: Fast and economical
+- 点击侧边栏顶部的折叠/展开按钮
+- 折叠时仅显示图标按钮，节省屏幕空间
+- 折叠状态在桌面端自动保存
+- 移动端（< 768px）默认折叠，展开时以覆盖层方式显示
 
-## Tips
+## 功能特性
 
-1. **API Key Security**
-   - Never share your API key
-   - Keep it in your browser only
-   - Revoke and regenerate if compromised
+### 工具调用
 
-2. **Cost Management**
-   - Monitor your OpenAI usage
-   - Use cheaper models for simple tasks
-   - Clear chat history when done
+AI 可以自动调用内置工具：
 
-3. **Privacy**
-   - All processing happens in your browser
-   - No data sent to third parties (except OpenAI)
-   - Conversations are not stored anywhere
+- **Calculator**: 四则运算（"42 乘以 17 等于多少？"）
+- **Get Current Time**: 获取当前时间（"现在几点了？"）
+
+工具调用过程中会显示执行指示器和工具名称标签。
+
+### Transitive Thinking
+
+开启后，AI 会先生成一轮推理链（可折叠查看），再给出最终回答。适合需要多步推理的复杂问题。
+
+### MCP 集成
+
+- 在设置中配置 MCP 服务器（URL、API Key）
+- 在聊天界面启用 MCP 并选择服务器
+- 连接成功后，MCP 工具自动注册到工具系统
+- AI 可以像使用内置工具一样调用 MCP 工具
+
+### 主题切换
+
+- Light / Dark / System 三种主题
+- 在设置面板中切换
+
+### 工作区设置导入/导出
+
+- 导出：将所有设置（API Key、模型、MCP 配置等）导出为 JSON 文件
+- 导入：从 JSON 文件恢复设置
+
+## 数据存储
+
+- **聊天记录**：存储在浏览器 IndexedDB 中，关闭浏览器后保留，不受 5MB 限制
+- **应用设置**：存储在 localStorage 中
+- **API Key**：仅存储在本地浏览器，不会发送到第三方（除 OpenAI API）
 
 ## Troubleshooting
 
-### "Please configure your OpenAI API key"
+### "请先在设置中配置 API Key"
 
-- Open settings and add a valid API key
-- Ensure the key starts with "sk-"
-- Check that the key is active in your OpenAI account
+- 打开设置面板，添加有效的 API Key
+- 确保 Key 以 "sk-" 开头且在 OpenAI 账户中处于活跃状态
 
-### API Errors
+### 聊天记录丢失
 
-- Verify your API key is correct
-- Check your OpenAI account has credits
-- Ensure base URL is correct (if using custom endpoint)
-- Check browser console for detailed error messages
+- 检查是否清除了浏览器数据（IndexedDB 会被一并清除）
+- 隐私/无痕模式下 IndexedDB 可能不可用
 
-### Theme Not Changing
+### API 错误
 
-- Try refreshing the page
-- Check browser console for errors
-- Clear browser cache if needed
+- 验证 API Key 是否正确
+- 检查 OpenAI 账户是否有余额
+- 如使用自定义端点，确认 Base URL 正确
+- 查看浏览器控制台获取详细错误信息
+
+### 侧边栏状态异常
+
+- 刷新页面
+- 清除 localStorage 中的 `air-agent-sidebar-collapsed` 键

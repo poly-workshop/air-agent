@@ -395,6 +395,17 @@ const [toolRegistry] = React.useState(() => {
 })
 ```
 
+## Session 集成
+
+工具调用结果会作为 Session 消息的一部分持久化到 IndexedDB。具体来说：
+
+- `tool_calls` 字段完整保存在 assistant 消息中
+- `role: "tool"` 的工具结果消息独立保存
+- 切换 Session 时，工具调用历史完整恢复
+- 流式响应期间的工具调用仅在完成后持久化
+
+详见 `lib/session/types.ts` 中的 `SessionMessage` 类型定义。
+
 ## Future Enhancements
 
 Potential improvements to consider:
@@ -404,8 +415,7 @@ Potential improvements to consider:
 3. **Tool Analytics**: Track tool usage and performance
 4. **Parallel Execution**: Execute multiple independent tools in parallel
 5. **Tool Caching**: Cache tool results for repeated calls
-6. **MCP Server Integration**: Full MCP server support with discovery
-7. **Tool Rate Limiting**: Per-tool rate limits
-8. **Tool Categories**: Organize tools by category
-9. **Tool Testing UI**: Built-in tool testing interface
-10. **Tool Documentation**: Auto-generate docs from tool definitions
+6. **Tool Rate Limiting**: Per-tool rate limits
+7. **Tool Categories**: Organize tools by category
+8. **Tool Testing UI**: Built-in tool testing interface
+9. **Tool Documentation**: Auto-generate docs from tool definitions

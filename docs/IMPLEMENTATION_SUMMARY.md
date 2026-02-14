@@ -1,286 +1,107 @@
 # Implementation Summary
 
-## Automatic Tool Call Handling and Streaming Continuation
+## 功能概览
 
-This document summarizes the implementation of automatic tool call handling and streaming continuation in the Air Agent codebase.
+Air Agent 是一个纯前端 AI 聊天应用，支持自动工具调用、流式响应、MCP 集成和完整的聊天 Session 管理。
 
-## What Was Implemented
+## 核心功能模块
 
-### 1. Tool Infrastructure (lib/tools/)
+### 1. 聊天 Session 管理系统
 
-**Types System (types.ts)**
+基于 IndexedDB 的完整 Session 生命周期管理，支持多会话并行、持久化存储和自动标题生成。
 
-- `ToolDefinition`: OpenAI-compatible function definition format
-- `ToolExecutor`: Async function signature for tool execution
-- `Tool`: Combined definition and executor
-- `ToolCall`: Structure for LLM tool call responses
-- `ChatMessage`: Extended message format supporting tools
-- `ToolResult`: Standardized result format with success/error
+**架构分层：**
 
-**Tool Registry (registry.ts)**
+- **SessionStorage** (`lib/session/storage.ts`) — IndexedDB 异步读写层，使用 `idb` 包封装
+- **SessionManager** (`lib/session/manager.ts`) — 异步 CRUD 操作 + 业务规则（内存缓存 + 异步持久化）
+- **SessionContext** (`lib/session/context.tsx`) — React Context Provider，处理异步初始化和状态同步
+- **SessionSidebar** (`components/session-sidebar.tsx`) — 左侧会话列表 UI
+- **SessionCreator** (`components/session-creator.tsx`) — 新会话创建页面 + 推荐问题
 
-- Central registry for managing available tools
-- Methods for registering, executing, and listing tools
-- Built-in error handling for missing or failed tools
+**关键特性：**
 
-**Default Tools (default-tools.ts)**
+- IndexedDB 存储突破 localStorage 5MB 限制，支持大量对话历史
+- 每个 Session 作为独立记录存储（keyPath: `id`），支持单条 CRUD
+- 所有写入操作先更新内存缓存再异步持久化，读取操作从内存同步返回
+- 流式消息仅在完成后持久化，不保存中间状态
+- 不存储 system prompt 消息
+- 侧边栏折叠状态使用 localStorage（轻量布尔值）
 
-- **Calculator**: Arithmetic operations (add, subtract, multiply, divide)
-  - Input validation for required parameters
-  - Error handling for division by zero
-  - Type checking for numeric inputs
-  
-- **Get Current Time**: Returns current date/time
-  - Timezone support (defaults to UTC)
-  - Formatted and ISO timestamp outputs
-  
+### 2. 工具调用系统 (lib/tools/)
 
-### 2. AI SDK Service (lib/ai-sdk.ts)
+**类型系统 (types.ts)**
 
-**Core Features**
+- `ToolDefinition`: OpenAI 兼容的函数定义格式
+- `ToolExecutor`: 异步工具执行函数签名
+- `Tool`: 定义 + 执行器组合
+- `ToolCall`: LLM 工具调用响应结构
+- `ChatMessage`: 扩展消息格式（支持工具）
+- `ToolResult`: 标准化结果格式（success/error）
 
-- Streaming response handling with Server-Sent Events (SSE)
-- Automatic tool call detection and execution
-- Multi-turn tool conversation loop
-- Configurable iteration limits to prevent infinite loops
-- Progressive content streaming to UI
+**工具注册中心 (registry.ts)**
 
-**Stream Processing**
+- 集中管理可用工具的注册、执行和列表
+- 内置错误处理（工具缺失、执行失败）
 
-- Character-by-character content streaming
-- Tool call accumulation from deltas
-- Proper index tracking for multiple tool calls
-- Error recovery during streaming
+**内置工具 (default-tools.ts)**
 
-**Tool Execution Loop**
+- Calculator: 四则运算（加减乘除），含除零保护
+- Get Current Time: 当前日期时间，支持时区参数
 
-1. Send messages to LLM with tool definitions
-2. Receive streaming response
-3. Detect tool calls in response
-4. Execute tools automatically
-5. Send tool results back to LLM
-6. Continue until complete (no more tool calls)
-7. Stream final response to user
+### 3. AI SDK 服务 (lib/ai-sdk.ts)
 
-### 3. Chat Interface Updates (components/chat-interface.tsx)
+- SSE 流式响应处理
+- 自动工具调用检测与执行
+- 多轮工具对话循环（最大 5 次迭代）
+- 逐字符内容流式推送到 UI
 
-**UI Enhancements**
+### 4. MCP 集成 (lib/mcp/)
 
-- Real-time streaming text updates
-- Tool execution indicators
-- Tool call badges on assistant messages
-- Loading states with descriptive text
-- Error messages display
+- `McpClient`: Streamable HTTP 传输协议客户端
+- `mcpToolToAirAgentTool`: MCP 工具到内部 Tool 格式的适配器
+- MCP 服务器配置持久化到 localStorage
+- 内置 MCP Server（可选，需 Node.js 运行时）
 
-**State Management**
+### 5. 页面布局与 UI
 
-- Streaming message handling
-- Active tool call tracking
-- Message history with tool results
-- Proper cleanup on errors
+- 双栏布局：左侧 SessionSidebar + 右侧主内容区
+- 响应式设计：< 768px 时侧边栏默认折叠，展开时 overlay 显示
+- 主内容区根据状态显示：Loading → SessionCreator → ChatInterface
+- 主题切换（Light/Dark/System）
+- 设置面板（API Key、模型、系统提示词、Transitive Thinking 开关）
+- 工作区设置导入/导出
 
-**User Experience**
+## 存储架构
 
-- Seamless tool execution without user intervention
-- Visual feedback during tool operations
-- Progressive response updates
-- No interruption between tool calls and responses
+| 存储方式 | 用途 | 特点 |
+|----------|------|------|
+| IndexedDB (`air-agent-db`) | Session 数据（消息历史） | 异步、大容量、每个 Session 独立记录 |
+| localStorage | 设置、MCP 配置、侧边栏折叠状态 | 同步、轻量配置 |
 
-### 4. UI Components
+## 技术栈
 
-**Badge Component (components/ui/badge.tsx)**
+- Next.js (App Router, 静态导出)
+- React 19 + TypeScript
+- Tailwind CSS + shadcn/ui
+- `idb` (IndexedDB Promise 封装)
+- `@modelcontextprotocol/sdk` (MCP 客户端)
+- Vitest + fast-check + fake-indexeddb (测试)
 
-- New component for displaying tool indicators
-- Multiple variants (default, secondary, destructive, outline)
-- Consistent styling with shadcn/ui
+## 错误处理
 
-### 5. Documentation
+| 场景 | 处理方式 |
+|------|----------|
+| IndexedDB 打开失败 | 记录 console.error，返回空 Session 列表 |
+| IndexedDB 写入失败 | 捕获异常，抛出错误供上层处理 |
+| Session ID 不存在 | 静默忽略，不执行后续操作 |
+| 删除不存在的 Session | 静默忽略 |
+| 消息添加到不存在的 Session | 静默忽略，记录 console.warn |
+| 未配置 API Key | SessionCreator 禁用所有交互，ChatInterface 禁用输入 |
+| 工具执行失败 | 返回错误结果，AI 在响应中说明 |
+| 网络错误 | 显示错误信息，保留已有消息 |
 
-**TOOL_IMPLEMENTATION.md**
-
-- Architecture overview
-- Creating custom tools guide
-- MCP compatibility documentation
-- Best practices and examples
-- Error handling patterns
-- Security considerations
-
-**TESTING.md**
-
-- Manual testing procedures
-- Example prompts for each tool
-- Expected behaviors
-- Debugging guide
-- Testing checklist
-
-**README.md Updates**
-
-- Added tool support features
-- Link to implementation guide
-- Description of built-in tools
-
-### 6. Testing
-
-**Test Script (scripts/test-tools.ts)**
-
-- Validates tool registry functionality
-- Tests all default tools
-- Verifies error handling
-- Checks edge cases
-
-## Technical Achievements
-
-### Streaming Implementation
-
-- ✅ Server-Sent Events (SSE) parsing
-- ✅ Progressive UI updates
-- ✅ Proper buffer management
-- ✅ Error recovery
-
-### Tool Call Loop
-
-- ✅ Automatic detection
-- ✅ Parallel tool execution
-- ✅ Result forwarding
-- ✅ Iteration limiting
-- ✅ Error handling at each step
-
-### Extensibility
-
-- ✅ Easy to add new tools
-- ✅ MCP-compatible architecture
-- ✅ Provider-agnostic design
-- ✅ Modular tool system
-
-### Error Handling
-
-- ✅ Tool execution errors
-- ✅ JSON parsing errors
-- ✅ Network errors
-- ✅ Invalid tool calls
-- ✅ Missing parameters
-- ✅ Division by zero
-- ✅ Tool not found
-
-### Code Quality
-
-- ✅ TypeScript type safety
-- ✅ Input validation
-- ✅ JSDoc comments
-- ✅ Consistent error patterns
-- ✅ Accessibility (aria-labels)
-- ✅ No security vulnerabilities (CodeQL scan passed)
-
-## Acceptance Criteria Met
-
-From the original issue requirements:
-
-### ✅ Multi-step Tool Resolution
-
-- Questions requiring multiple tool calls are resolved in a single flow
-- No manual intervention between tool execution steps
-- Example: "Calculate 15 * 23 and tell me the weather in Paris" works seamlessly
-
-### ✅ Streaming Continuation
-
-- Frontend receives streamed output as tool calls complete
-- Real-time UI updates during tool execution
-- Continuous flow from user message to final response
-
-### ✅ Extensible Tool Support
-
-- Easy to add new tools (demonstrated with 3 default tools)
-- Clear API for tool definition and execution
-- MCP-compatible architecture
-- Provider-agnostic design
-
-### ✅ Error Handling
-
-- Failed tool calls handled gracefully
-- Error messages displayed to user
-- Detailed error information in tool results
-- System continues operation after errors
-
-### ✅ Documentation
-
-- Comprehensive implementation guide
-- Testing procedures documented
-- Examples and code pointers included
-- Best practices documented
-
-## Performance Characteristics
-
-- **First Token Latency**: 2-3 seconds (typical for gpt-4o-mini)
-- **Tool Execution**: < 1 second per tool (all tools are synchronous)
-- **Streaming Rate**: Smooth, continuous character-by-character
-- **Max Tool Iterations**: 5 (configurable, prevents infinite loops)
-
-## Security Considerations
-
-- ✅ Input validation on all tool parameters
-- ✅ Type checking for tool arguments
-- ✅ No execution of arbitrary code
-- ✅ Tool results sanitized before display
-- ✅ API keys stored client-side only
-- ✅ No data sent to third parties except OpenAI
-- ✅ CodeQL security scan passed
-
-## Browser Compatibility
-
-- Modern browsers with Fetch API support
-- Streaming API support required
-- ES6+ JavaScript features
-- Works in Chrome, Firefox, Safari, Edge
-
-## Known Limitations
-
-1. **Client-side only**: No server-side tool execution
-2. **Sequential tool execution**: Tools execute one at a time
-3. **No persistent history**: Conversation history stored in browser memory only
-4. **Tool iteration limit**: Maximum 5 tool calls per message (configurable)
-
-## Future Enhancements
-
-Potential improvements identified:
-
-1. **Parallel Tool Execution**: Execute independent tools simultaneously
-2. **Tool Permissions**: User consent for sensitive tools
-3. **Tool Marketplace**: Browse and enable community tools
-4. **MCP Server Integration**: Full MCP server discovery and connection
-5. **Tool Caching**: Cache results for repeated calls
-6. **Tool Analytics**: Track usage and performance
-7. **Tool Rate Limiting**: Per-tool rate limits
-8. **Advanced Error Recovery**: Retry failed tools
-9. **Tool Testing UI**: Built-in interface for testing tools
-10. **Tool Documentation Generator**: Auto-generate docs from definitions
-
-## Migration Guide
-
-For existing users:
-
-1. **No Breaking Changes**: Existing chat functionality unchanged
-2. **Tools Optional**: Tools only activate when LLM decides to use them
-3. **Backwards Compatible**: Works with all OpenAI-compatible models
-4. **Settings Preserved**: Existing settings and API keys remain valid
-
-## Metrics
-
-- **Lines of Code Added**: ~1,400
-- **Files Created**: 10
-- **Tools Implemented**: 3
-- **Documentation Pages**: 3
-- **Test Coverage**: Manual validation complete
-- **Build Time**: ~4 seconds
-- **Bundle Size Impact**: Minimal (<10KB)
-
-## Conclusion
-
-The implementation successfully adds automatic tool call handling and streaming continuation to the Air Agent, meeting all acceptance criteria from the original issue. The solution is:
-
-- **Production-ready**: All code reviewed and security scanned
-- **Well-documented**: Comprehensive guides and examples
-- **Extensible**: Easy to add new tools and providers
-- **User-friendly**: Seamless experience with visual feedback
-- **Maintainable**: Clean architecture with proper error handling
-
-The foundation is now in place for users to create custom tools and integrate with external services like MCP, making the Air Agent a powerful and flexible AI chat interface.
+## 浏览器兼容性
+
+- 需要支持 IndexedDB、Fetch API、SSE 的现代浏览器
+- Chrome、Firefox、Safari、Edge 均支持
+- 隐私模式下 IndexedDB 可能受限，会降级为空 Session 列表

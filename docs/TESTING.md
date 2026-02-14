@@ -1,271 +1,124 @@
 # Testing Guide
 
-## Testing Tool Call Functionality
+## 测试架构
 
-This guide helps you test the automatic tool calling feature in Air Agent.
+项目使用 Vitest 作为测试框架，结合 fast-check 进行属性测试，fake-indexeddb 模拟 IndexedDB 环境。
 
-## Prerequisites
-
-1. Have a valid OpenAI API key
-2. Running the app (locally or deployed)
-3. Access to a model that supports function calling (gpt-4o-mini, gpt-4o, gpt-4-turbo, etc.)
-
-## Basic Testing Steps
-
-### 1. Configure the Application
-
-1. Start the application:
-
-   ```bash
-   npm run dev
-   ```
-
-2. Open <http://localhost:3000> in your browser
-
-3. Click the settings icon (⚙️) in the top right
-
-4. Enter your OpenAI API key
-
-5. Select a model that supports function calling (e.g., `gpt-4o-mini`)
-
-6. Click "Save Settings"
-
-### 2. Test Calculator Tool
-
-Try these example prompts:
-
-**Simple Calculation:**
+### 测试文件结构
 
 ```
-What is 42 multiplied by 17?
+__tests__/
+└── session/
+    ├── storage.test.ts           # SessionStorage 单元测试
+    ├── storage.property.test.ts  # SessionStorage 属性测试
+    ├── manager.test.ts           # SessionManager 单元测试
+    ├── manager.property.test.ts  # SessionManager 属性测试
+    └── sidebar.test.ts           # SessionSidebar 组件测试
 ```
 
-Expected behavior:
+### 运行测试
 
-- The AI should recognize it needs to use the calculator
-- You'll see a "calculator" badge appear
-- A loading indicator will show "Executing tools: calculator"
-- The AI will respond with the result (714)
+```bash
+# 运行所有测试
+npx vitest --run
 
-**Multiple Calculations:**
+# 运行特定测试文件
+npx vitest --run __tests__/session/storage.test.ts
 
-```
-What is 15 + 23, and then divide that result by 2?
-```
-
-Expected behavior:
-
-- The AI may call the calculator multiple times
-- Each tool call will show in the UI
-- Final answer should be provided
-
-### 3. Test Current Time Tool
-
-Try these example prompts:
-
-**Get Current Time:**
-
-```
-What time is it right now?
+# 运行匹配模式的测试
+npx vitest --run --testPathPattern="session"
 ```
 
-Expected behavior:
-
-- Tool call to `get_current_time`
-- AI responds with current date and time
-
-**Time in Different Timezone:**
-
-```
-What time is it in Tokyo?
-```
-
-Expected behavior:
-
-- Tool call to `get_current_time` with timezone parameter
-- AI responds with Tokyo time
-
-### 4. Test Multi-Step Workflows
-
-Try prompts that require multiple tool calls:
-
-**Complex Query:**
-
-```
-Calculate 100 divided by 4, and then tell me what time it is in Tokyo.
-```
-
-Expected behavior:
-
-- First tool call: calculator
-- Second tool call: get_current_time
-- AI synthesizes both results in the response
-
-### 5. Test Streaming Behavior
-
-Pay attention to the UI during tool execution:
-
-1. **Content Streaming**: Text appears character by character
-2. **Tool Execution Indicator**: Shows which tools are running
-3. **Tool Call Badges**: Display on assistant messages
-4. **Continuous Flow**: No interruption between tool calls and response
-
-## Visual Indicators to Look For
-
-### During Execution
-
-- **Loading Spinner**: Shows when waiting for initial response
-- **Tool Execution Banner**: "Executing tools: [tool_name]"
-- **Streaming Text**: Assistant response appears gradually
-
-### After Completion
-
-- **Tool Call Badges**: Small badges showing which tools were used
-- **Tool Result Messages**: (Optional) Detailed tool results in muted style
-- **Final Response**: Clean, natural language response incorporating tool results
-
-## Error Testing
-
-### Invalid API Key
-
-1. Enter an invalid API key in settings
-2. Try to send a message
-3. Should see error message displayed in UI
-
-### Tool Execution Failure
-
-Tools are designed to handle errors gracefully. Try:
-
-```
-Calculate 10 divided by 0
-```
-
-Expected behavior:
-
-- Tool executes
-- Returns error: "Cannot divide by zero"
-- AI acknowledges the error in its response
-
-### Network Issues
-
-If network connection is lost during streaming:
-
-- Error message should be displayed
-- Previous messages remain visible
-- Can retry after connection is restored
-
-## Advanced Testing
-
-### Test Tool Loop Limit
-
-Try a prompt that might cause excessive tool calls:
-
-```
-Keep calculating squares starting from 2 until you reach a very large number
-```
-
-The system has a limit of 5 tool iterations per message to prevent infinite loops.
-
-### Test Concurrent Tool Usage
-
-```
-Tell me the current time, calculate 25 times 4, and give me the weather in London, all at once.
-```
-
-Tools execute sequentially but should complete in one conversational flow.
-
-## Debugging
-
-### Check Browser Console
-
-Open browser developer tools (F12) and check the console for:
-
-- Network requests to OpenAI API
-- Tool execution logs
-- Error messages
-- Streaming data
-
-### Common Issues
-
-**Tools Not Being Called:**
-
-- Verify model supports function calling
-- Check API key is valid
-- Ensure prompts clearly indicate need for tool
-- Check console for errors
-
-**Streaming Not Working:**
-
-- Verify network connection
-- Check API endpoint is accessible
-- Look for errors in console
-
-**UI Not Updating:**
-
-- Refresh the page
-- Clear browser cache
-- Check for JavaScript errors in console
-
-## Manual Testing Checklist
-
-Use this checklist to verify all functionality:
-
-- [ ] Calculator: Addition
-- [ ] Calculator: Subtraction
-- [ ] Calculator: Multiplication
-- [ ] Calculator: Division
-- [ ] Calculator: Division by zero (error handling)
-- [ ] Get Current Time: Default timezone
-- [ ] Get Current Time: Custom timezone
-- [ ] Multi-step: Multiple tool calls in one message
-- [ ] Streaming: Content appears progressively
-- [ ] UI Indicators: Tool badges display correctly
-- [ ] UI Indicators: Loading states work
-- [ ] Error Handling: Invalid API key
-- [ ] Error Handling: Network error
-- [ ] Error Handling: Tool execution error
-- [ ] Edge Case: Very long responses
-- [ ] Edge Case: Rapid message sending
-
-## Expected vs Actual Results
-
-When testing, document any deviations from expected behavior:
-
-**Template:**
-
-```
-Test: [Description]
-Expected: [What should happen]
-Actual: [What did happen]
-Issue: [If different from expected]
-```
-
-## Performance Testing
-
-Check these aspects:
-
-1. **Response Time**: First token should appear within 2-3 seconds
-2. **Tool Execution**: Should complete within 1-2 seconds per tool
-3. **Streaming**: Smooth, continuous text appearance
-4. **UI Responsiveness**: No lag or freezing during streaming
-
-## Reporting Issues
-
-If you find issues, include:
-
-1. Browser and version
-2. Steps to reproduce
-3. Expected behavior
-4. Actual behavior
-5. Console errors (if any)
-6. Screenshots or screen recordings
-
-## Next Steps
-
-After testing:
-
-1. Try creating custom tools (see TOOL_IMPLEMENTATION.md)
-2. Test with different models
-3. Test with different types of queries
-4. Explore edge cases
-5. Test on different devices/browsers
+## 属性测试 (Property-Based Testing)
+
+使用 `fast-check` 库，每个属性至少运行 100 次迭代，生成随机输入验证系统不变量。
+
+### SessionStorage 属性测试
+
+| 属性 | 描述 | 验证需求 |
+|------|------|----------|
+| Property 3 | Session 数据 IndexedDB 往返一致性 | Req 2.3, 7.1, 7.2 |
+| Property 10 | 侧边栏折叠状态往返一致性 | Req 4.7 |
+
+### SessionManager 属性测试
+
+| 属性 | 描述 | 验证需求 |
+|------|------|----------|
+| Property 1 | Session 数据结构完整性 | Req 1.1, 1.2, 1.4 |
+| Property 2 | Session ID 唯一性 | Req 1.3 |
+| Property 4 | 消息添加后异步持久化 | Req 2.1 |
+| Property 5 | 新建 Session 成为活跃 Session | Req 3.1 |
+| Property 6 | 删除 Session 后数据完全移除 | Req 3.3 |
+| Property 7 | 删除活跃 Session 后自动切换 | Req 3.4 |
+| Property 8 | 首条消息自动生成标题 | Req 3.5 |
+| Property 9 | Session 列表按更新时间降序排列 | Req 4.2 |
+
+## 单元测试
+
+### SessionStorage 单元测试
+
+- IndexedDB 为空时 loadAll 返回空列表
+- save 和 loadAll 的基本读写
+- saveAll 批量写入
+- remove 删除指定 Session
+- 侧边栏折叠状态读写（localStorage）
+- IndexedDB 错误处理
+
+### SessionManager 单元测试
+
+- `init()` 异步初始化（从 IndexedDB 加载）
+- `createSession()` 创建并设为活跃
+- `deleteSession()` 删除后自动切换
+- 删除最后一个 Session 后 activeSessionId 为 null
+- `addMessage()` 添加消息并更新 updatedAt
+- 向不存在的 Session 添加消息时静默忽略
+- `updateTitle()` 更新标题
+- `generateTitle()` 标题截取规则
+- `getAllSessions()` 按 updatedAt 降序排列
+
+### SessionSidebar 组件测试
+
+- 折叠/展开状态渲染
+- Session 列表显示
+- 活跃 Session 高亮
+- 新建/删除/切换操作
+
+## 测试环境配置
+
+- `fake-indexeddb`: 在 Node.js 中模拟完整的 IndexedDB API
+- 每个测试用例独立，测试前清空 IndexedDB 数据库
+- 所有涉及存储的测试使用 `async/await`
+- localStorage 使用 vitest 内置 mock
+
+## 手动测试
+
+### 工具调用测试
+
+1. 配置 OpenAI API Key
+2. 测试 Calculator: "42 乘以 17 等于多少？"
+3. 测试 Get Current Time: "现在几点了？"
+4. 测试多步工具调用: "计算 100 除以 4，然后告诉我东京现在几点"
+
+### Session 管理测试
+
+1. 创建新会话（推荐问题 + 自定义输入）
+2. 发送消息后检查标题自动生成
+3. 切换会话，验证消息历史完整恢复
+4. 删除会话，验证自动切换行为
+5. 刷新页面，验证所有会话从 IndexedDB 恢复
+6. 测试侧边栏折叠/展开及状态持久化
+7. 测试移动端响应式布局（< 768px）
+
+### MCP 集成测试
+
+1. 配置 MCP 服务器
+2. 启用 MCP 并连接
+3. 验证 MCP 工具可被 AI 调用
+4. 测试断开重连
+
+### 错误场景测试
+
+- 无效 API Key
+- 网络中断
+- 工具执行失败（如除以零）
+- 快速连续发送消息

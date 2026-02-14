@@ -18,28 +18,45 @@ The interface maintains the same clean, user-friendly design while adding powerf
 
 #### Core Features Added
 
-1. **Automatic Tool Execution**: When the LLM responds with tool calls, they execute automatically and results are sent back to continue the conversation
-2. **Real-time Streaming**: Responses stream character-by-character with progressive updates as tool calls complete
-3. **Multi-turn Tool Conversations**: Handles multiple tool call iterations in a single message flow
-4. **Visual Feedback**: Shows active tool execution with badges and loading indicators
+1. **Chat Session Management**: Complete session lifecycle management with IndexedDB persistence
+   - Multi-session support with sidebar navigation
+   - Session creation page with recommended questions
+   - Auto-generated session titles from first message
+   - Dual-column layout (sidebar + chat area)
+   - Responsive design with collapsible sidebar
+2. **Automatic Tool Execution**: When the LLM responds with tool calls, they execute automatically and results are sent back to continue the conversation
+3. **Real-time Streaming**: Responses stream character-by-character with progressive updates as tool calls complete
+4. **Multi-turn Tool Conversations**: Handles multiple tool call iterations in a single message flow
+5. **Visual Feedback**: Shows active tool execution with badges and loading indicators
 
 #### Files Added
 
+- `lib/session/types.ts` - Session and SessionMessage type definitions + conversion functions
+- `lib/session/storage.ts` - SessionStorage class (IndexedDB async read/write layer using `idb`)
+- `lib/session/manager.ts` - SessionManager class (async CRUD + business rules)
+- `lib/session/context.tsx` - SessionContext + SessionProvider (React Context with async init)
+- `lib/session/index.ts` - Session module exports
+- `components/session-sidebar.tsx` - Session sidebar component (list, switch, delete, create)
+- `components/session-creator.tsx` - Session creation page (recommended questions + custom input)
 - `lib/tools/types.ts` - Type definitions for tools and messages
 - `lib/tools/registry.ts` - Central tool registry for managing available tools
-- `lib/tools/default-tools.ts` - Three example tools (calculator, time, weather)
+- `lib/tools/default-tools.ts` - Built-in tools (calculator, time)
 - `lib/tools/index.ts` - Tools module exports
 - `lib/ai-sdk.ts` - AI SDK service handling streaming and tool execution
 - `components/ui/badge.tsx` - Badge component for tool indicators
 - `scripts/test-tools.ts` - Validation script for tool execution
-- `TOOL_IMPLEMENTATION.md` - Comprehensive implementation guide
-- `TESTING.md` - Manual testing procedures
-- `IMPLEMENTATION_SUMMARY.md` - Complete implementation summary
+- `__tests__/session/storage.test.ts` - SessionStorage unit tests
+- `__tests__/session/storage.property.test.ts` - SessionStorage property tests
+- `__tests__/session/manager.test.ts` - SessionManager unit tests
+- `__tests__/session/manager.property.test.ts` - SessionManager property tests
+- `__tests__/session/sidebar.test.ts` - SessionSidebar component tests
 
 #### Files Modified
 
-- `components/chat-interface.tsx` - Updated to support streaming and tool calls
-- `README.md` - Added tool support documentation
+- `app/page.tsx` - Refactored to dual-column layout with SessionProvider, sidebar, and conditional content rendering
+- `components/chat-interface.tsx` - Integrated with Session system (messages from context, async persistence, auto-title)
+- `lib/constants.ts` - Added IndexedDB constants (DB_NAME, DB_VERSION, SESSIONS_STORE, SIDEBAR_STATE_KEY)
+- `README.md` - Added tool support and session management documentation
 
 ### Technical Implementation
 

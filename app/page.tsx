@@ -3,9 +3,13 @@
 import * as React from "react"
 import { ChatInterface } from "@/components/chat-interface"
 import { SettingsDrawer } from "@/components/settings-drawer"
-import { STORAGE_KEY, DEFAULT_MODEL, MCP_STORAGE_KEY, MCP_SETTINGS_KEY } from "@/lib/constants"
+import { SessionSidebar } from "@/components/session-sidebar"
+import { SessionCreator } from "@/components/session-creator"
+import { SessionProvider, useSession } from "@/lib/session/context"
+import { STORAGE_KEY, DEFAULT_MODEL, MCP_STORAGE_KEY, MCP_SETTINGS_KEY, SIDEBAR_STATE_KEY } from "@/lib/constants"
 import { McpEnabledSettings, McpServerConfig } from "@/lib/mcp"
 import { getDefaultToolNames } from "@/lib/tools"
+import { Loader2 } from "lucide-react"
 
 interface SettingsData {
   openaiApiKey: string
@@ -96,7 +100,13 @@ function parseStoredMcpChatSettings(stored: string | null): McpEnabledSettings {
   return parsed
 }
 
-export default function Home() {
+/**
+ * Inner content component that uses useSession hook.
+ * Must be rendered inside SessionProvider.
+ */
+function HomeContent() {
+  const { isLoading, activeSession, createSession } = useSession()
+
   const [settings, setSettings] = React.useState<SettingsData>({
     openaiApiKey: "",
     openaiBaseUrl: "",
@@ -106,6 +116,10 @@ export default function Home() {
     enabledBuiltInTools: getDefaultToolNames(),
   })
   const [mcpConfigKey, setMcpConfigKey] = React.useState(0)
+
+  // Sidebar collapsed state
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(true)
+  const [isMobile, setIsMobile] = React.useState(false)
 
   // Load settings from localStorage on mount
   React.useEffect(() => {
@@ -120,6 +134,46 @@ export default function Home() {
         console.error("Failed to load settings:", e)
       }
     }
+  }, [])
+
+  // Load sidebar collapsed state and detect mobile on mount
+  React.useEffect(() => {
+    const mobile = window.innerWidth < 768
+    setIsMobile(mobile)
+
+    if (mobile) {
+      setSidebarCollapsed(true)
+    } else {
+      const stored = localStorage.getItem(SIDEBAR_STATE_KEY)
+      setSidebarCollapsed(stored === "true")
+    }
+
+    const handleResize = () => {
+      const nowMobile = window.innerWidth < 768
+      setIsMobile(nowMobile)
+      if (nowMobile) {
+        setSidebarCollapsed(true)
+      }
+    }
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  const handleToggleCollapse = React.useCallback(() => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      // Only persist on desktop
+      if (window.innerWidth >= 768) {
+        localStorage.setItem(SIDEBAR_STATE_KEY, String(next))
+      }
+      return next
+    })
+  }, [])
+
+  // Close overlay sidebar when clicking backdrop on mobile
+  const handleBackdropClick = React.useCallback(() => {
+    setSidebarCollapsed(true)
   }, [])
 
   // Save settings to localStorage
@@ -214,6 +268,24 @@ export default function Home() {
     }
   }
 
+  // Initial message to auto-send in ChatInterface (from SessionCreator)
+  const [initialMessage, setInitialMessage] = React.useState<string | undefined>()
+
+  const handleStartSession = React.useCallback(
+    async (message: string) => {
+      // Set the initial message BEFORE creating the session so that when
+      // ChatInterface mounts (triggered by activeSession becoming non-null),
+      // the initialMessage prop is already available on the first render.
+      setInitialMessage(message)
+      await createSession()
+    },
+    [createSession]
+  )
+
+  const handleInitialMessageConsumed = React.useCallback(() => {
+    setInitialMessage(undefined)
+  }, [])
+
   return (
     <div className="h-screen flex flex-col bg-background">
       <SettingsDrawer
@@ -223,17 +295,64 @@ export default function Home() {
         onImport={handleImportSettings}
         onMcpConfigChange={handleMcpConfigChange}
       />
-      <main className="flex-1 container mx-auto px-4 py-4 overflow-hidden">
-        <ChatInterface
-          key={mcpConfigKey}
-          apiKey={settings.openaiApiKey}
-          baseUrl={settings.openaiBaseUrl}
-          model={settings.model}
-          systemPrompt={settings.systemPrompt}
-          transitiveThinking={settings.transitiveThinking}
-          enabledBuiltInTools={settings.enabledBuiltInTools}
-        />
-      </main>
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Mobile overlay backdrop */}
+        {isMobile && !sidebarCollapsed && (
+          <div
+            className="fixed inset-0 bg-black/50 z-30"
+            onClick={handleBackdropClick}
+            aria-hidden="true"
+          />
+        )}
+
+        {/* Sidebar */}
+        <div
+          className={
+            isMobile && !sidebarCollapsed
+              ? "fixed inset-y-0 left-0 z-40"
+              : "relative z-10"
+          }
+        >
+          <SessionSidebar
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={handleToggleCollapse}
+          />
+        </div>
+
+        {/* Main content area */}
+        <main className="flex-1 overflow-hidden">
+          {isLoading ? (
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : activeSession ? (
+            <ChatInterface
+              key={`${activeSession.id}-${mcpConfigKey}`}
+              apiKey={settings.openaiApiKey}
+              baseUrl={settings.openaiBaseUrl}
+              model={settings.model}
+              systemPrompt={settings.systemPrompt}
+              transitiveThinking={settings.transitiveThinking}
+              enabledBuiltInTools={settings.enabledBuiltInTools}
+              initialMessage={initialMessage}
+              onInitialMessageConsumed={handleInitialMessageConsumed}
+            />
+          ) : (
+            <SessionCreator
+              onStartSession={handleStartSession}
+              apiKeyConfigured={!!settings.openaiApiKey}
+            />
+          )}
+        </main>
+      </div>
     </div>
+  )
+}
+
+export default function Home() {
+  return (
+    <SessionProvider>
+      <HomeContent />
+    </SessionProvider>
   )
 }
