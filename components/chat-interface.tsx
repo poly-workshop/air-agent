@@ -338,7 +338,7 @@ export function ChatInterface({
               {
                 role: "user" as const,
                 content:
-                  `Continue from the reasoning chain above. Use tools if needed. Then output only a \`### Final Answer\` section with concise, actionable content. The output language must be ${outputLanguage}.`,
+                  `Continue from the reasoning chain above. Use tools if needed, then provide only the final response. Do not include \"Reasoning Chain\" or \"Final Answer\" headings, and do not repeat the reasoning section. Keep it concise and actionable. The output language must be ${outputLanguage}.`,
               },
             ]
           : []),

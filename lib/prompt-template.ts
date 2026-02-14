@@ -34,11 +34,12 @@ const TRANSITIVE_THINKING_PROMPT = [
   "3. Validate each link; mark uncertainty with \"uncertain\" and what is missing.",
   "4. If tools/data are needed, say what is needed before concluding.",
   "",
-  "### Final Answer",
-  "- Provide the final answer after the reasoning section.",
-  "- Keep it concise and actionable.",
+  "After the reasoning section, provide the final response directly.",
+  "Do not include a heading like \"Final Answer\" in the visible output.",
+  "Do not repeat the \"Reasoning Chain\" section in the final response.",
+  "Keep the final response concise and actionable.",
   "",
-  "Never skip the \"### Reasoning Chain\" section.",
+  "The \"### Reasoning Chain\" section is required only for the reasoning draft phase.",
 ].join("\n")
 
 export async function buildSystemPrompt(options: {
