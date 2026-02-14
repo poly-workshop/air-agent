@@ -19,12 +19,14 @@ interface McpToggleProps {
   enabled: boolean
   serverId?: string
   onToggle: (enabled: boolean, serverId?: string) => void
+  /** Changing this value forces the server list to reload from storage */
+  refreshKey?: number
 }
 
-export function McpToggle({ enabled, serverId, onToggle }: McpToggleProps) {
+export function McpToggle({ enabled, serverId, onToggle, refreshKey }: McpToggleProps) {
   const [servers, setServers] = React.useState<McpServerConfig[]>([])
 
-  // Load servers on mount and when dialog is opened
+  // Load servers on mount, when refreshKey changes, or when storage changes from another tab
   React.useEffect(() => {
     const loadServers = () => {
       const allServers = loadMcpServers()
@@ -33,14 +35,14 @@ export function McpToggle({ enabled, serverId, onToggle }: McpToggleProps) {
     
     loadServers()
     
-    // Reload when storage changes (e.g., from MCP config dialog)
+    // Reload when storage changes from another tab
     const handleStorageChange = () => {
       loadServers()
     }
     
     window.addEventListener("storage", handleStorageChange)
     return () => window.removeEventListener("storage", handleStorageChange)
-  }, [])
+  }, [refreshKey])
 
   const handleToggle = () => {
     if (enabled) {

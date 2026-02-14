@@ -374,6 +374,7 @@ function HomeContent() {
               mcpError={mcp.mcpError}
               mcpServerId={mcp.mcpServerId}
               onMcpToggle={mcp.handleMcpToggle}
+              mcpConfigKey={mcpConfigKey}
             />
           )}
         </main>
