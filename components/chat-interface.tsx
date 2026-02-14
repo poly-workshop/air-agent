@@ -144,6 +144,7 @@ interface ChatInterfaceProps {
   systemPrompt: string
   transitiveThinking: boolean
   toolRegistry: ToolRegistry
+  maxToolIterations: number
   // MCP state (managed by parent)
   mcpEnabled: boolean
   mcpServerId: string | undefined
@@ -164,6 +165,7 @@ export function ChatInterface({
   systemPrompt,
   transitiveThinking,
   toolRegistry,
+  maxToolIterations,
   mcpEnabled,
   mcpServerId,
   mcpStatus,
@@ -326,6 +328,7 @@ export function ChatInterface({
         baseUrl: url,
         model: model || DEFAULT_MODEL,
         toolRegistry,
+        maxToolIterations,
         onStreamChunk: (chunk) => {
           if (chunk.type === "content" && chunk.content) {
             streamingContent += chunk.content
@@ -399,7 +402,7 @@ export function ChatInterface({
     } finally {
       setIsLoading(false)
     }
-  }, [apiKey, baseUrl, model, systemPrompt, transitiveThinking, toolRegistry, activeSessionId, persistedMessages, addMessage, updateSessionTitle])
+  }, [apiKey, baseUrl, model, systemPrompt, transitiveThinking, toolRegistry, maxToolIterations, activeSessionId, persistedMessages, addMessage, updateSessionTitle])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

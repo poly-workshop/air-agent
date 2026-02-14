@@ -11,6 +11,7 @@ import { McpEnabledSettings, McpServerConfig, useMcpConnection } from "@/lib/mcp
 import { ToolRegistry, getDefaultTools, getDefaultToolNames } from "@/lib/tools"
 import { Loader2 } from "lucide-react"
 
+
 interface SettingsData {
   openaiApiKey: string
   openaiBaseUrl: string
@@ -18,6 +19,7 @@ interface SettingsData {
   systemPrompt: string
   transitiveThinking: boolean
   enabledBuiltInTools: string[]
+  maxToolIterations: number
 }
 
 interface WorkspaceSettingsExport {
@@ -41,7 +43,8 @@ function isSettingsData(value: unknown): value is SettingsData {
     (value.systemPrompt === undefined || typeof value.systemPrompt === "string") &&
     (value.transitiveThinking === undefined || typeof value.transitiveThinking === "boolean") &&
     (value.enabledBuiltInTools === undefined ||
-      (Array.isArray(value.enabledBuiltInTools) && value.enabledBuiltInTools.every((item) => typeof item === "string")))
+      (Array.isArray(value.enabledBuiltInTools) && value.enabledBuiltInTools.every((item) => typeof item === "string"))) &&
+    (value.maxToolIterations === undefined || typeof value.maxToolIterations === "number")
   )
 }
 
@@ -51,6 +54,9 @@ function normalizeSettingsData(value: SettingsData): SettingsData {
     defaultToolNames.includes(name)
   )
 
+  const rawMax = value.maxToolIterations ?? 5
+  const maxToolIterations = rawMax === -1 ? -1 : Math.max(1, Math.floor(rawMax))
+
   return {
     openaiApiKey: value.openaiApiKey,
     openaiBaseUrl: value.openaiBaseUrl,
@@ -58,6 +64,7 @@ function normalizeSettingsData(value: SettingsData): SettingsData {
     systemPrompt: value.systemPrompt || "",
     transitiveThinking: value.transitiveThinking ?? false,
     enabledBuiltInTools,
+    maxToolIterations,
   }
 }
 
@@ -114,6 +121,7 @@ function HomeContent() {
     systemPrompt: "",
     transitiveThinking: false,
     enabledBuiltInTools: getDefaultToolNames(),
+    maxToolIterations: 5,
   })
   const [mcpConfigKey, setMcpConfigKey] = React.useState(0)
 
@@ -347,6 +355,7 @@ function HomeContent() {
               systemPrompt={settings.systemPrompt}
               transitiveThinking={settings.transitiveThinking}
               toolRegistry={toolRegistry}
+              maxToolIterations={settings.maxToolIterations}
               mcpEnabled={mcp.mcpEnabled}
               mcpServerId={mcp.mcpServerId}
               mcpStatus={mcp.mcpStatus}

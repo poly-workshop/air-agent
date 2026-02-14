@@ -26,6 +26,7 @@ interface SettingsData {
   systemPrompt: string
   transitiveThinking: boolean
   enabledBuiltInTools: string[]
+  maxToolIterations: number
 }
 
 interface SettingsDrawerProps {
@@ -139,6 +140,28 @@ export function SettingsDrawer({
             />
             <p className="text-xs text-muted-foreground">
               {"Supported template variables: {{current_time}}, {{current_location}}, {{current_time_iso}}, {{current_timezone}}."}
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="drawer-maxToolIterations">Max Tool Iterations</Label>
+            <Input
+              id="drawer-maxToolIterations"
+              type="number"
+              min={-1}
+              step={1}
+              placeholder="5"
+              value={localSettings.maxToolIterations}
+              onChange={(e) => {
+                const raw = e.target.value
+                if (raw === "" || raw === "-") return
+                const num = parseInt(raw, 10)
+                if (Number.isNaN(num) || (num < -1)) return
+                setLocalSettings({ ...localSettings, maxToolIterations: num })
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              Maximum number of tool call rounds per message. Set to -1 for unlimited.
             </p>
           </div>
 

@@ -59,7 +59,7 @@ export class AiSdkService {
     const allMessages = [...messages]
     let iterations = 0
 
-    while (iterations < this.maxToolIterations) {
+    while (this.maxToolIterations === -1 || iterations < this.maxToolIterations) {
       iterations++
 
       // Get tools if registry is available
@@ -146,7 +146,7 @@ export class AiSdkService {
       break
     }
 
-    if (iterations >= this.maxToolIterations) {
+    if (this.maxToolIterations !== -1 && iterations >= this.maxToolIterations) {
       throw new Error("Maximum tool iteration limit reached")
     }
 
