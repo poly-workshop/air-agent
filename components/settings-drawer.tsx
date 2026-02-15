@@ -156,7 +156,7 @@ export function SettingsDrawer({
                 const raw = e.target.value
                 if (raw === "" || raw === "-") return
                 const num = parseInt(raw, 10)
-                if (Number.isNaN(num) || (num < -1)) return
+                if (Number.isNaN(num) || num <= 0) return
                 setLocalSettings({ ...localSettings, maxToolIterations: num })
               }}
             />
