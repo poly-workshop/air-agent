@@ -17,6 +17,8 @@ interface SessionCreatorProps {
   mcpError?: string
   mcpServerId?: string
   onMcpToggle?: (enabled: boolean, serverId?: string) => void
+  /** Passed to McpToggle to force server list refresh */
+  mcpConfigKey?: number
 }
 
 const RECOMMENDED_QUESTIONS = [
@@ -54,6 +56,7 @@ export function SessionCreator({
   mcpError,
   mcpServerId,
   onMcpToggle,
+  mcpConfigKey,
 }: SessionCreatorProps) {
   const [input, setInput] = useState("")
 
@@ -96,6 +99,7 @@ export function SessionCreator({
             enabled={mcpEnabled ?? false}
             serverId={mcpServerId}
             onToggle={onMcpToggle}
+            refreshKey={mcpConfigKey}
           />
           {mcpEnabled && mcpStatus === "connected" && (
             <Badge variant="default" className="text-xs">
