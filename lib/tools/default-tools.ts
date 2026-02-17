@@ -196,13 +196,17 @@ export const getSkillContentTool: Tool = {
     type: "function",
     function: {
       name: "get_skill_content",
-      description: "Fetches the content of one local skill by id with optional character limit",
+      description: "Fetches one local skill by id, optionally filtering by topic and character limit",
       parameters: {
         type: "object",
         properties: {
           skill_id: {
             type: "string",
             description: "Skill identifier from list_skills",
+          },
+          topic: {
+            type: "string",
+            description: "Optional topic keyword to retrieve only relevant sections",
           },
           max_chars: {
             type: "number",
@@ -215,6 +219,7 @@ export const getSkillContentTool: Tool = {
   },
   executor: async (args: Record<string, unknown>): Promise<ToolResult> => {
     const skillId = args.skill_id
+    const topic = args.topic
     const maxChars = args.max_chars
 
     if (typeof skillId !== "string" || !skillId.trim()) {
@@ -233,9 +238,18 @@ export const getSkillContentTool: Tool = {
       }
     }
 
+    if (topic !== undefined && (typeof topic !== "string" || !topic.trim())) {
+      return {
+        success: false,
+        result: null,
+        error: "topic must be a non-empty string when provided",
+      }
+    }
+
     try {
       const content = await getSkillContentForTool({
         skillId,
+        topic: typeof topic === "string" ? topic : undefined,
         maxChars: typeof maxChars === "number" ? maxChars : undefined,
       })
 

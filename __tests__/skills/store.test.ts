@@ -23,7 +23,8 @@ const indexPayload = {
   ],
 }
 
-const fullContent = "A".repeat(5000)
+const planningContent = "PLAN ".repeat(420)
+const verificationContent = "VERIFY ".repeat(420)
 
 function mockFetchRouter(url: string): Response {
   if (url === "/skills/index.json") {
@@ -38,7 +39,16 @@ function mockFetchRouter(url: string): Response {
       JSON.stringify({
         id: "qwen-coder-style",
         version: "1.0.0",
-        content: fullContent,
+        sections: [
+          {
+            topic: "planning",
+            content: planningContent,
+          },
+          {
+            topic: "verification",
+            content: verificationContent,
+          },
+        ],
       }),
       {
         status: 200,
@@ -83,15 +93,29 @@ describe("skills store", () => {
     expect(result).not.toBeNull()
     expect(result?.content.length).toBe(400)
     expect(result?.truncated).toBe(true)
-    expect(result?.totalLength).toBe(5000)
+    expect(result?.totalLength).toBeGreaterThan(400)
+  })
+
+  it("supports topic-based section retrieval", async () => {
+    const result = await getSkillContentForTool({
+      skillId: "qwen-coder-style",
+      topic: "verify",
+      maxChars: 1200,
+    })
+
+    expect(result).not.toBeNull()
+    expect(result?.topic).toBe("verify")
+    expect(result?.matchedTopics).toEqual(["verification"])
+    expect(result?.content).toContain("## verification")
+    expect(result?.content).not.toContain("## planning")
   })
 
   it("reuses in-memory cache for repeated skill reads", async () => {
     const first = await getSkillContentById("qwen-coder-style")
     const second = await getSkillContentById("qwen-coder-style")
 
-    expect(first?.content.length).toBe(5000)
-    expect(second?.content.length).toBe(5000)
+    expect(first?.content.length).toBeGreaterThan(2000)
+    expect(second?.content.length).toBeGreaterThan(2000)
 
     const indexFetchCount = fetchSpy.mock.calls.filter((call: [RequestInfo | URL]) => call[0] === "/skills/index.json").length
     const contentFetchCount = fetchSpy.mock.calls.filter((call: [RequestInfo | URL]) => call[0] === "/skills/qwen-coder-style.json").length
@@ -106,5 +130,6 @@ describe("skills store", () => {
     expect(prompt).toContain("Available local skills index")
     expect(prompt).toContain("qwen-coder-style")
     expect(prompt).toContain("get_skill_content")
+    expect(prompt).toContain("topic")
   })
 })

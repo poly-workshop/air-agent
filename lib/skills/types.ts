@@ -8,10 +8,16 @@ export interface SkillIndexEntry {
   file: string
 }
 
+export interface SkillContentSection {
+  topic: string
+  content: string
+}
+
 export interface SkillContentDocument {
   id: string
   content: string
   version: string
+  sections?: SkillContentSection[]
 }
 
 export interface SkillContentResponse {
@@ -22,4 +28,6 @@ export interface SkillContentResponse {
   content: string
   totalLength: number
   truncated: boolean
+  topic?: string
+  matchedTopics?: string[]
 }
