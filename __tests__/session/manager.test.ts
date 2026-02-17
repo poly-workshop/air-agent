@@ -118,7 +118,7 @@ describe("SessionManager", () => {
       const session = await manager.createSession()
 
       expect(session.id).toBeTruthy()
-      expect(session.title).toBe("新会话")
+      expect(session.title).toBe("New Session")
       expect(session.messages).toEqual([])
       expect(new Date(session.createdAt).toISOString()).toBe(session.createdAt)
       expect(new Date(session.updatedAt).toISOString()).toBe(session.updatedAt)

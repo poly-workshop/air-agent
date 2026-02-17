@@ -69,7 +69,7 @@ export class SessionManager {
     const now = new Date().toISOString()
     const session: Session = {
       id: crypto.randomUUID(),
-      title: title ?? "新会话",
+      title: title ?? "New Session",
       messages: [],
       createdAt: now,
       updatedAt: now,

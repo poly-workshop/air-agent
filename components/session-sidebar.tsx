@@ -19,22 +19,22 @@ export function formatRelativeTime(isoString: string): string {
   const diffMs = now - then
 
   const seconds = Math.floor(diffMs / 1000)
-  if (seconds < 60) return "刚刚"
+  if (seconds < 60) return "Just now"
 
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} 分钟前`
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`
 
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} 小时前`
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`
 
   const days = Math.floor(hours / 24)
-  if (days < 30) return `${days} 天前`
+  if (days < 30) return `${days} day${days === 1 ? "" : "s"} ago`
 
   const months = Math.floor(days / 30)
-  if (months < 12) return `${months} 个月前`
+  if (months < 12) return `${months} month${months === 1 ? "" : "s"} ago`
 
   const years = Math.floor(months / 12)
-  return `${years} 年前`
+  return `${years} year${years === 1 ? "" : "s"} ago`
 }
 
 export function SessionSidebar({ collapsed, onToggleCollapse }: SessionSidebarProps) {
@@ -63,7 +63,7 @@ export function SessionSidebar({ collapsed, onToggleCollapse }: SessionSidebarPr
           variant="ghost"
           size="icon"
           onClick={onToggleCollapse}
-          aria-label="展开侧边栏"
+          aria-label="Expand sidebar"
         >
           <PanelLeftOpen className="h-4 w-4" />
         </Button>
@@ -71,7 +71,7 @@ export function SessionSidebar({ collapsed, onToggleCollapse }: SessionSidebarPr
           variant="ghost"
           size="icon"
           onClick={handleNewSession}
-          aria-label="新建会话"
+          aria-label="New session"
         >
           <Plus className="h-4 w-4" />
         </Button>
@@ -88,7 +88,7 @@ export function SessionSidebar({ collapsed, onToggleCollapse }: SessionSidebarPr
           variant="ghost"
           size="icon"
           onClick={onToggleCollapse}
-          aria-label="折叠侧边栏"
+          aria-label="Collapse sidebar"
         >
           <PanelLeftClose className="h-4 w-4" />
         </Button>
@@ -99,7 +99,7 @@ export function SessionSidebar({ collapsed, onToggleCollapse }: SessionSidebarPr
           className="gap-1"
         >
           <Plus className="h-4 w-4" />
-          新建会话
+          New Session
         </Button>
       </div>
 
@@ -134,7 +134,7 @@ export function SessionSidebar({ collapsed, onToggleCollapse }: SessionSidebarPr
                 type="button"
                 className="h-6 w-6 shrink-0 inline-flex items-center justify-center rounded-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:bg-accent"
                 onClick={(e) => handleDelete(e, session.id)}
-                aria-label={`删除会话: ${session.title}`}
+                aria-label={`Delete session: ${session.title}`}
               >
                 <Trash2 className="h-3.5 w-3.5 text-muted-foreground hover:text-destructive" />
               </button>
