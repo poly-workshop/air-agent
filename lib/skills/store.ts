@@ -1,14 +1,24 @@
 import { openDB, type DBSchema, type IDBPDatabase } from "idb"
-import type { SkillContentDocument, SkillContentResponse, SkillIndexEntry } from "@/lib/skills/types"
+import type {
+  InstallableSkillMetadata,
+  InstallableSkillPackage,
+  SkillContentDocument,
+  SkillContentResponse,
+  SkillIndexEntry,
+} from "@/lib/skills/types"
 
 const SKILLS_INDEX_URL = "/skills/index.json"
 const SKILLS_CACHE_DB_NAME = "air-agent-skills-db"
 const SKILLS_CACHE_DB_VERSION = 1
 const SKILLS_CACHE_STORE = "skill_documents"
 const SKILLS_MAX_CONTENT_CHARS = 12_000
+const INSTALLED_SKILLS_INDEX_STORAGE_KEY = "air-agent-installed-skills-index"
+const INSTALLED_SKILL_FILE_PREFIX = "installed:"
+const INSTALLED_SKILL_DOC_PREFIX = "installed-doc:"
 
 interface SkillsCacheRecord {
   id: string
+  logicalId?: string
   version: string
   content: string
   sections?: Array<{
@@ -28,6 +38,26 @@ interface SkillsCacheDB extends DBSchema {
 let skillIndexCache: SkillIndexEntry[] | null = null
 const inMemoryContentCache = new Map<string, SkillContentDocument>()
 let dbPromise: Promise<IDBPDatabase<SkillsCacheDB>> | null = null
+
+function getMemoryCacheKey(skillId: string, installed: boolean): string {
+  return installed ? `${INSTALLED_SKILL_FILE_PREFIX}${skillId}` : skillId
+}
+
+function getDocumentStoreKey(skillId: string, installed: boolean): string {
+  return installed ? `${INSTALLED_SKILL_DOC_PREFIX}${skillId}` : skillId
+}
+
+function isInstalledEntry(entry: SkillIndexEntry): boolean {
+  return entry.file.startsWith(INSTALLED_SKILL_FILE_PREFIX)
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string")
+}
+
+function canUseLocalStorage(): boolean {
+  return typeof localStorage !== "undefined"
+}
 
 function getDbPromise(): Promise<IDBPDatabase<SkillsCacheDB>> {
   if (!dbPromise) {
@@ -82,6 +112,148 @@ function normalizeSkillIndex(entries: unknown): SkillIndexEntry[] {
     .filter((entry): entry is SkillIndexEntry => entry !== null)
 }
 
+function normalizeSkillSections(rawSections: unknown): Array<{ topic: string; content: string }> | undefined {
+  if (!Array.isArray(rawSections)) {
+    return undefined
+  }
+
+  const sections = rawSections
+    .map((item) => {
+      if (typeof item !== "object" || item === null) {
+        return null
+      }
+
+      const raw = item as Record<string, unknown>
+      if (typeof raw.topic !== "string" || typeof raw.content !== "string") {
+        return null
+      }
+
+      return {
+        topic: raw.topic,
+        content: raw.content,
+      }
+    })
+    .filter((item): item is { topic: string; content: string } => item !== null)
+
+  return sections.length > 0 ? sections : undefined
+}
+
+function buildContentFromSections(
+  sections: Array<{ topic: string; content: string }> | undefined
+): string {
+  if (!sections || sections.length === 0) {
+    return ""
+  }
+  return sections.map((section) => section.content).join("\n\n")
+}
+
+function readInstalledSkillIndex(): SkillIndexEntry[] {
+  if (!canUseLocalStorage()) {
+    return []
+  }
+
+  try {
+    const raw = localStorage.getItem(INSTALLED_SKILLS_INDEX_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw) as unknown
+    return normalizeSkillIndex(parsed)
+  } catch (error) {
+    console.error("[skills] failed to read installed skill index", error)
+    return []
+  }
+}
+
+function saveInstalledSkillIndex(entries: SkillIndexEntry[]): void {
+  if (!canUseLocalStorage()) {
+    return
+  }
+
+  try {
+    localStorage.setItem(INSTALLED_SKILLS_INDEX_STORAGE_KEY, JSON.stringify(entries))
+  } catch (error) {
+    console.error("[skills] failed to save installed skill index", error)
+  }
+}
+
+function mergeSkillIndexes(bundled: SkillIndexEntry[], installed: SkillIndexEntry[]): SkillIndexEntry[] {
+  const merged = new Map<string, SkillIndexEntry>()
+
+  for (const entry of bundled) {
+    merged.set(entry.id, entry)
+  }
+  for (const entry of installed) {
+    merged.set(entry.id, entry)
+  }
+
+  return Array.from(merged.values())
+}
+
+function normalizeInstallPackage(input: unknown): InstallableSkillPackage {
+  if (typeof input !== "object" || input === null) {
+    throw new Error("Invalid skill package format")
+  }
+
+  const payload = input as Record<string, unknown>
+  const metadataSource =
+    typeof payload.metadata === "object" && payload.metadata !== null
+      ? (payload.metadata as Record<string, unknown>)
+      : payload
+
+  const id = metadataSource.id
+  const name = metadataSource.name
+  const summary = metadataSource.summary
+  const tags = metadataSource.tags
+  const version = metadataSource.version
+  const sizeHint = metadataSource.sizeHint
+
+  if (
+    typeof id !== "string" ||
+    typeof name !== "string" ||
+    typeof summary !== "string" ||
+    typeof version !== "string" ||
+    !isStringArray(tags)
+  ) {
+    throw new Error("Invalid skill metadata")
+  }
+
+  const sections =
+    normalizeSkillSections(payload.sections) ??
+    (typeof payload.content === "object" && payload.content !== null
+      ? normalizeSkillSections((payload.content as Record<string, unknown>).sections)
+      : undefined)
+
+  const topLevelContent = typeof payload.content === "string" ? payload.content : undefined
+  const nestedContent =
+    typeof payload.content === "object" && payload.content !== null
+      ? (() => {
+          const nested = payload.content as Record<string, unknown>
+          if (typeof nested.content === "string") return nested.content
+          if (typeof nested.text === "string") return nested.text
+          return undefined
+        })()
+      : undefined
+
+  const content = topLevelContent ?? nestedContent
+  if (typeof content !== "string" && (!sections || sections.length === 0)) {
+    throw new Error("Skill package must include content or sections")
+  }
+
+  const metadata: InstallableSkillMetadata = {
+    id,
+    name,
+    summary,
+    tags,
+    version,
+    ...(typeof sizeHint === "number" && Number.isFinite(sizeHint) && { sizeHint }),
+  }
+
+  return {
+    metadata,
+    ...(typeof content === "string" && { content }),
+    ...(sections && { sections }),
+  }
+}
+
 async function fetchSkillIndex(): Promise<SkillIndexEntry[]> {
   const response = await fetch(SKILLS_INDEX_URL)
   if (!response.ok) {
@@ -97,18 +269,80 @@ export async function listSkillIndex(): Promise<SkillIndexEntry[]> {
     return skillIndexCache
   }
 
-  skillIndexCache = await fetchSkillIndex()
+  const [bundled, installed] = await Promise.all([
+    fetchSkillIndex(),
+    Promise.resolve(readInstalledSkillIndex()),
+  ])
+
+  skillIndexCache = mergeSkillIndexes(bundled, installed)
   return skillIndexCache
 }
 
-async function loadCachedSkillDocument(skillId: string): Promise<SkillContentDocument | null> {
+export async function installSkillFromPackage(pkg: InstallableSkillPackage): Promise<SkillIndexEntry> {
+  const sections = pkg.sections
+  const content = pkg.content ?? buildContentFromSections(sections)
+  const metadata = pkg.metadata
+
+  const entry: SkillIndexEntry = {
+    id: metadata.id,
+    name: metadata.name,
+    summary: metadata.summary,
+    tags: metadata.tags,
+    version: metadata.version,
+    sizeHint: metadata.sizeHint ?? content.length,
+    file: `${INSTALLED_SKILL_FILE_PREFIX}${metadata.id}`,
+  }
+
+  const installedIndex = readInstalledSkillIndex()
+  const nextInstalledIndex = [
+    ...installedIndex.filter((item) => item.id !== entry.id),
+    entry,
+  ]
+  saveInstalledSkillIndex(nextInstalledIndex)
+
+  const document: SkillContentDocument = {
+    id: entry.id,
+    content,
+    version: entry.version,
+    ...(sections && { sections }),
+  }
+
+  inMemoryContentCache.set(getMemoryCacheKey(entry.id, true), document)
+  await saveSkillDocumentToCache(document, true)
+  skillIndexCache = null
+
+  return entry
+}
+
+export async function installSkillFromJson(rawJson: string): Promise<SkillIndexEntry> {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(rawJson)
+  } catch {
+    throw new Error("Invalid JSON format")
+  }
+
+  const normalized = normalizeInstallPackage(parsed)
+  return installSkillFromPackage(normalized)
+}
+
+export async function installSkillFromMarkdown(
+  markdown: string,
+  filename: string,
+): Promise<SkillIndexEntry> {
+  const { parseMarkdownSkill } = await import("@/lib/skills/markdown")
+  const pkg = parseMarkdownSkill(markdown, filename)
+  return installSkillFromPackage(pkg)
+}
+
+async function loadCachedSkillDocument(skillId: string, installed: boolean): Promise<SkillContentDocument | null> {
   try {
     const db = await getDbPromise()
-    const record = await db.get(SKILLS_CACHE_STORE, skillId)
+    const record = await db.get(SKILLS_CACHE_STORE, getDocumentStoreKey(skillId, installed))
     if (!record) return null
 
     return {
-      id: record.id,
+      id: record.logicalId || skillId,
       content: record.content,
       version: record.version,
       ...(record.sections !== undefined && { sections: record.sections }),
@@ -119,11 +353,12 @@ async function loadCachedSkillDocument(skillId: string): Promise<SkillContentDoc
   }
 }
 
-async function saveSkillDocumentToCache(document: SkillContentDocument): Promise<void> {
+async function saveSkillDocumentToCache(document: SkillContentDocument, installed: boolean): Promise<void> {
   try {
     const db = await getDbPromise()
     await db.put(SKILLS_CACHE_STORE, {
-      id: document.id,
+      id: getDocumentStoreKey(document.id, installed),
+      ...(installed && { logicalId: document.id }),
       content: document.content,
       version: document.version,
       ...(document.sections !== undefined && { sections: document.sections }),
@@ -147,25 +382,7 @@ async function fetchSkillDocumentFromPublic(entry: SkillIndexEntry): Promise<Ski
     sections?: unknown
   }
 
-  const normalizedSections = Array.isArray(payload.sections)
-    ? payload.sections
-        .map((item) => {
-          if (typeof item !== "object" || item === null) {
-            return null
-          }
-
-          const raw = item as Record<string, unknown>
-          if (typeof raw.topic !== "string" || typeof raw.content !== "string") {
-            return null
-          }
-
-          return {
-            topic: raw.topic,
-            content: raw.content,
-          }
-        })
-        .filter((item): item is { topic: string; content: string } => item !== null)
-    : undefined
+  const normalizedSections = normalizeSkillSections(payload.sections)
 
   if (
     typeof payload.id !== "string" ||
@@ -197,20 +414,27 @@ export async function getSkillContentById(skillId: string): Promise<SkillContent
     return null
   }
 
-  const memoryCached = inMemoryContentCache.get(skillId)
+  const installed = isInstalledEntry(entry)
+  const memoryKey = getMemoryCacheKey(skillId, installed)
+
+  const memoryCached = inMemoryContentCache.get(memoryKey)
   if (memoryCached && memoryCached.version === entry.version) {
     return memoryCached
   }
 
-  const indexedDbCached = await loadCachedSkillDocument(skillId)
+  const indexedDbCached = await loadCachedSkillDocument(skillId, installed)
   if (indexedDbCached && indexedDbCached.version === entry.version) {
-    inMemoryContentCache.set(skillId, indexedDbCached)
+    inMemoryContentCache.set(memoryKey, indexedDbCached)
     return indexedDbCached
   }
 
+  if (installed) {
+    return null
+  }
+
   const document = await fetchSkillDocumentFromPublic(entry)
-  inMemoryContentCache.set(skillId, document)
-  await saveSkillDocumentToCache(document)
+  inMemoryContentCache.set(memoryKey, document)
+  await saveSkillDocumentToCache(document, false)
   return document
 }
 
@@ -291,6 +515,13 @@ export async function buildSkillIndexPromptBlock(): Promise<string> {
 export function resetSkillsStoreForTests(): void {
   skillIndexCache = null
   inMemoryContentCache.clear()
+  if (canUseLocalStorage()) {
+    try {
+      localStorage.removeItem(INSTALLED_SKILLS_INDEX_STORAGE_KEY)
+    } catch {
+      // No-op for test cleanup
+    }
+  }
 }
 
 export async function clearSkillsIndexedDbCacheForTests(): Promise<void> {

@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { ThemeSelector } from "@/components/theme-selector"
 import { McpConfigDialog } from "@/components/mcp-config-dialog"
+import { installSkillsFromZipFile } from "@/lib/skills"
 import { getDefaultTools } from "@/lib/tools"
 
 interface SettingsData {
@@ -47,6 +48,7 @@ export function SettingsDrawer({
   const [localSettings, setLocalSettings] = React.useState(settings)
   const [open, setOpen] = React.useState(false)
   const importInputRef = React.useRef<HTMLInputElement>(null)
+  const installSkillInputRef = React.useRef<HTMLInputElement>(null)
   const builtInTools = React.useMemo(() => getDefaultTools(), [])
 
   React.useEffect(() => {
@@ -59,6 +61,10 @@ export function SettingsDrawer({
 
   const handleImportClick = () => {
     importInputRef.current?.click()
+  }
+
+  const handleInstallSkillClick = () => {
+    installSkillInputRef.current?.click()
   }
 
   const toggleBuiltInTool = (toolName: string, enabled: boolean) => {
@@ -240,6 +246,39 @@ export function SettingsDrawer({
                 Import
               </Button>
             </div>
+          </div>
+
+          <div className="border-t pt-4 grid gap-2">
+            <Label>Skills</Label>
+            <input
+              ref={installSkillInputRef}
+              type="file"
+              accept=".zip,application/zip,application/x-zip-compressed"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                event.target.value = ""
+                if (!file) return
+
+                void (async () => {
+                  try {
+                    const entries = await installSkillsFromZipFile(file)
+                    if (entries.length === 1) {
+                      alert(`Skill installed: ${entries[0].name} (${entries[0].id})`)
+                    } else {
+                      alert(`Installed ${entries.length} skills from zip`)
+                    }
+                  } catch (error) {
+                    console.error("Failed to install skill package:", error)
+                    alert("Install failed. Please use a valid skills.zip package.")
+                  }
+                })()
+              }}
+            />
+            <Button variant="outline" onClick={handleInstallSkillClick}>
+              <Upload className="h-4 w-4 mr-2" />
+              Install skills.zip
+            </Button>
           </div>
         </div>
 

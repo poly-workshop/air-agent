@@ -5,9 +5,28 @@ import {
   clearSkillsIndexedDbCacheForTests,
   getSkillContentById,
   getSkillContentForTool,
+  installSkillFromJson,
   listSkillIndex,
   resetSkillsStoreForTests,
 } from "@/lib/skills"
+
+const localStorageMock = (() => {
+  let store: Record<string, string> = {}
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key]
+    }),
+    clear: vi.fn(() => {
+      store = {}
+    }),
+  }
+})()
+
+Object.defineProperty(globalThis, "localStorage", { value: localStorageMock })
 
 const indexPayload = {
   skills: [
@@ -69,6 +88,10 @@ describe("skills store", () => {
   beforeEach(async () => {
     resetSkillsStoreForTests()
     await clearSkillsIndexedDbCacheForTests()
+    localStorageMock.clear()
+    localStorageMock.getItem.mockClear()
+    localStorageMock.setItem.mockClear()
+    localStorageMock.removeItem.mockClear()
     vi.stubGlobal("fetch", fetchSpy)
     fetchSpy.mockClear()
   })
@@ -131,5 +154,62 @@ describe("skills store", () => {
     expect(prompt).toContain("qwen-coder-style")
     expect(prompt).toContain("get_skill_content")
     expect(prompt).toContain("topic")
+  })
+
+  it("installs custom skill and merges it into index", async () => {
+    const entry = await installSkillFromJson(
+      JSON.stringify({
+        metadata: {
+          id: "custom-style",
+          name: "Custom Style",
+          summary: "User installed skill package",
+          tags: ["custom", "workflow"],
+          version: "1.0.0",
+        },
+        sections: [
+          {
+            topic: "focus",
+            content: "Focus on high-signal implementation details.",
+          },
+        ],
+      })
+    )
+
+    expect(entry.file).toBe("installed:custom-style")
+
+    const index = await listSkillIndex()
+    expect(index.map((item) => item.id)).toContain("custom-style")
+
+    const installedContent = await getSkillContentById("custom-style")
+    expect(installedContent?.version).toBe("1.0.0")
+    expect(installedContent?.content).toContain("Focus on high-signal")
+
+    const contentFetchCount = fetchSpy.mock.calls.filter((call: [RequestInfo | URL]) => call[0] === "/skills/custom-style.json").length
+    expect(contentFetchCount).toBe(0)
+  })
+
+  it("installed skill overrides bundled skill metadata and content by id", async () => {
+    await installSkillFromJson(
+      JSON.stringify({
+        metadata: {
+          id: "qwen-coder-style",
+          name: "Qwen Coder Style (Installed)",
+          summary: "Installed override",
+          tags: ["coding", "override"],
+          version: "9.9.9",
+        },
+        content: "Installed content override.",
+      })
+    )
+
+    const index = await listSkillIndex()
+    const overridden = index.find((item) => item.id === "qwen-coder-style")
+    expect(overridden?.name).toBe("Qwen Coder Style (Installed)")
+    expect(overridden?.version).toBe("9.9.9")
+    expect(overridden?.file).toBe("installed:qwen-coder-style")
+
+    const content = await getSkillContentById("qwen-coder-style")
+    expect(content?.content).toContain("Installed content override.")
+    expect(content?.version).toBe("9.9.9")
   })
 })

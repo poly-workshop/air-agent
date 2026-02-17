@@ -13,6 +13,21 @@ export interface SkillContentSection {
   content: string
 }
 
+export interface InstallableSkillMetadata {
+  id: string
+  name: string
+  summary: string
+  tags: string[]
+  version: string
+  sizeHint?: number
+}
+
+export interface InstallableSkillPackage {
+  metadata: InstallableSkillMetadata
+  content?: string
+  sections?: SkillContentSection[]
+}
+
 export interface SkillContentDocument {
   id: string
   content: string
