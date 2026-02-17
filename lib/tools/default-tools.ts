@@ -3,6 +3,7 @@
  */
 
 import { Tool, ToolResult } from "./types"
+import { getSkillContentForTool, listSkillIndex } from "@/lib/skills"
 
 /**
  * Calculator tool - performs basic arithmetic
@@ -148,10 +149,123 @@ export const getCurrentTimeTool: Tool = {
 }
 
 /**
+ * List local skill metadata (compact index only)
+ */
+export const listSkillsTool: Tool = {
+  definition: {
+    type: "function",
+    function: {
+      name: "list_skills",
+      description: "Lists available local skills as compact metadata (without full content)",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
+  executor: async (): Promise<ToolResult> => {
+    try {
+      const skills = await listSkillIndex()
+      return {
+        success: true,
+        result: skills.map((skill) => ({
+          id: skill.id,
+          name: skill.name,
+          summary: skill.summary,
+          tags: skill.tags,
+          version: skill.version,
+          sizeHint: skill.sizeHint,
+        })),
+      }
+    } catch (error) {
+      return {
+        success: false,
+        result: null,
+        error: error instanceof Error ? error.message : "Failed to list skills",
+      }
+    }
+  },
+}
+
+/**
+ * Retrieve skill content on demand
+ */
+export const getSkillContentTool: Tool = {
+  definition: {
+    type: "function",
+    function: {
+      name: "get_skill_content",
+      description: "Fetches the content of one local skill by id with optional character limit",
+      parameters: {
+        type: "object",
+        properties: {
+          skill_id: {
+            type: "string",
+            description: "Skill identifier from list_skills",
+          },
+          max_chars: {
+            type: "number",
+            description: "Optional max returned characters (300-12000, default 4000)",
+          },
+        },
+        required: ["skill_id"],
+      },
+    },
+  },
+  executor: async (args: Record<string, unknown>): Promise<ToolResult> => {
+    const skillId = args.skill_id
+    const maxChars = args.max_chars
+
+    if (typeof skillId !== "string" || !skillId.trim()) {
+      return {
+        success: false,
+        result: null,
+        error: "skill_id is required and must be a non-empty string",
+      }
+    }
+
+    if (maxChars !== undefined && typeof maxChars !== "number") {
+      return {
+        success: false,
+        result: null,
+        error: "max_chars must be a number when provided",
+      }
+    }
+
+    try {
+      const content = await getSkillContentForTool({
+        skillId,
+        maxChars: typeof maxChars === "number" ? maxChars : undefined,
+      })
+
+      if (!content) {
+        return {
+          success: false,
+          result: null,
+          error: `Skill '${skillId}' not found`,
+        }
+      }
+
+      return {
+        success: true,
+        result: content,
+      }
+    } catch (error) {
+      return {
+        success: false,
+        result: null,
+        error: error instanceof Error ? error.message : "Failed to retrieve skill content",
+      }
+    }
+  },
+}
+
+/**
  * Get all default tools
  */
 export function getDefaultTools(): Tool[] {
-  return [calculatorTool, getCurrentTimeTool]
+  return [calculatorTool, getCurrentTimeTool, listSkillsTool, getSkillContentTool]
 }
 
 export function getDefaultToolNames(): string[] {

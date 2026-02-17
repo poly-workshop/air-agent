@@ -1,0 +1,5 @@
+{
+  "id": "qwen-coder-style",
+  "version": "1.0.0",
+  "content": "Use a repository-first workflow. Start with quick context discovery, then define a compact execution plan with clear validation checkpoints. Implement changes with minimal scope and maintain existing style conventions. Prefer root-cause fixes over surface patches. After edits, run focused verification before broader checks. Summarize outcomes with changed files, risks, and next actions."
+}

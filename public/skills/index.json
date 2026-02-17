@@ -1,0 +1,13 @@
+{
+  "skills": [
+    {
+      "id": "qwen-coder-style",
+      "name": "Qwen Coder Style",
+      "summary": "Structured coding workflow for repository-safe implementation and verification.",
+      "tags": ["coding", "planning", "verification"],
+      "version": "1.0.0",
+      "sizeHint": 1500,
+      "file": "qwen-coder-style.json"
+    }
+  ]
+}

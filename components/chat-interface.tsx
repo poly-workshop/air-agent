@@ -15,6 +15,7 @@ import { ToolResult } from "@/components/tool-result"
 import { DEFAULT_MODEL, DEFAULT_BASE_URL } from "@/lib/constants"
 import { AiSdkService } from "@/lib/ai-sdk"
 import { buildSystemPrompt } from "@/lib/prompt-template"
+import { buildSkillIndexPromptBlock } from "@/lib/skills"
 import { ToolRegistry, ChatMessage, ToolCall } from "@/lib/tools"
 import { useSession } from "@/lib/session/context"
 import { toSessionMessage, fromSessionMessage } from "@/lib/session/types"
@@ -259,6 +260,8 @@ export function ChatInterface({
         template: systemPrompt,
         transitiveThinking,
       })
+      const skillIndexPrompt = await buildSkillIndexPromptBlock()
+      const effectiveSystemPrompt = [resolvedSystemPrompt, skillIndexPrompt].filter(Boolean).join("\n\n")
 
       // Build prior messages from persisted session messages (which now includes the user message we just added)
       // We need to use the messages BEFORE the current user message for the AI context,
@@ -277,7 +280,7 @@ export function ChatInterface({
           apiKey,
           baseUrl: url,
           model: model || DEFAULT_MODEL,
-          systemPrompt: resolvedSystemPrompt,
+          systemPrompt: effectiveSystemPrompt,
           messages: [
             ...priorMessages,
             {
@@ -319,8 +322,8 @@ export function ChatInterface({
           : []),
       ]
 
-      const chatMessages: ChatMessage[] = resolvedSystemPrompt
-        ? [{ role: "system", content: resolvedSystemPrompt }, ...executionMessages]
+      const chatMessages: ChatMessage[] = effectiveSystemPrompt
+        ? [{ role: "system", content: effectiveSystemPrompt }, ...executionMessages]
         : executionMessages
 
       const aiSdk = new AiSdkService({
