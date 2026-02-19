@@ -99,40 +99,8 @@ export class AiSdkService {
           throw new Error("Tool calls received but no tool registry provided")
         }
 
-        // Execute all tool calls
-        const toolResults = await Promise.all(
-          result.message.tool_calls.map(async (toolCall) => {
-            try {
-              const args = JSON.parse(toolCall.function.arguments)
-              const toolResult = await this.toolRegistry!.executeTool(toolCall.function.name, args)
-
-              const toolMessage: ChatMessage = {
-                role: "tool",
-                tool_call_id: toolCall.id,
-                name: toolCall.function.name,
-                content: JSON.stringify(toolResult),
-              }
-
-              return toolMessage
-            } catch (error) {
-              // Handle JSON parsing or tool execution errors
-              const errorResult = {
-                success: false,
-                result: null,
-                error: error instanceof Error ? error.message : "Failed to parse tool arguments",
-              }
-
-              const toolMessage: ChatMessage = {
-                role: "tool",
-                tool_call_id: toolCall.id,
-                name: toolCall.function.name,
-                content: JSON.stringify(errorResult),
-              }
-
-              return toolMessage
-            }
-          })
-        )
+        // Execute all tool calls in batch
+        const toolResults = await this.executeToolCalls(result.message.tool_calls)
 
         // Add tool results to conversation
         allMessages.push(...toolResults)
@@ -151,6 +119,65 @@ export class AiSdkService {
     }
 
     return allMessages
+  }
+
+  private async executeToolCalls(toolCalls: ToolCall[]): Promise<ChatMessage[]> {
+    if (!this.toolRegistry) {
+      throw new Error("Tool registry is not configured")
+    }
+
+    const preparedCalls = toolCalls.map((toolCall) => {
+      try {
+        const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>
+        return {
+          toolCall,
+          parsed: {
+            name: toolCall.function.name,
+            args,
+            toolCallId: toolCall.id,
+          },
+        }
+      } catch (error) {
+        return {
+          toolCall,
+          parseError: error instanceof Error ? error.message : "Failed to parse tool arguments",
+        }
+      }
+    })
+
+    const executableCalls = preparedCalls
+      .filter(
+        (item): item is { toolCall: ToolCall; parsed: { name: string; args: Record<string, unknown>; toolCallId: string } } =>
+          "parsed" in item
+      )
+      .map((item) => item.parsed)
+
+    const batchResults = await this.toolRegistry.executeToolsBatch(executableCalls)
+    let batchResultIndex = 0
+
+    return preparedCalls.map((item) => {
+      if ("parseError" in item) {
+        return {
+          role: "tool",
+          tool_call_id: item.toolCall.id,
+          name: item.toolCall.function.name,
+          content: JSON.stringify({
+            success: false,
+            result: null,
+            error: item.parseError,
+          }),
+        }
+      }
+
+      const currentResult = batchResults[batchResultIndex++]
+
+      return {
+        role: "tool",
+        tool_call_id: item.toolCall.id,
+        name: item.toolCall.function.name,
+        content: JSON.stringify(currentResult.result),
+      }
+    })
   }
 
   /**

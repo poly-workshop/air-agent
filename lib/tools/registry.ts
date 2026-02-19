@@ -2,7 +2,7 @@
  * Tool registry for managing available tools
  */
 
-import { Tool, ToolDefinition, ToolResult } from "./types"
+import { BatchToolCall, BatchToolResult, Tool, ToolDefinition, ToolResult } from "./types"
 
 export class ToolRegistry {
   private tools: Map<string, Tool> = new Map()
@@ -43,6 +43,19 @@ export class ToolRegistry {
         error: error instanceof Error ? error.message : "Unknown error",
       }
     }
+  }
+
+  /**
+   * Execute multiple tools in parallel and return ordered results
+   */
+  async executeToolsBatch(calls: BatchToolCall[]): Promise<BatchToolResult[]> {
+    return Promise.all(
+      calls.map(async (call) => ({
+        name: call.name,
+        toolCallId: call.toolCallId,
+        result: await this.executeTool(call.name, call.args),
+      }))
+    )
   }
 
   /**

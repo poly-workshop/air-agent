@@ -113,46 +113,66 @@ async function generateTransitiveThought(options: {
     conversation.push(assistantChatMessage)
 
     if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
-      const toolMessages = await Promise.all(
-        assistantMessage.tool_calls.map(async (toolCall) => {
-          const toolName = toolCall.function.name
+      const preparedCalls = assistantMessage.tool_calls.map((toolCall) => {
+        const toolName = toolCall.function.name
 
-          if (!TRANSITIVE_SKILL_TOOL_NAMES.has(toolName)) {
-            return {
-              role: "tool" as const,
-              tool_call_id: toolCall.id,
-              name: toolName,
-              content: JSON.stringify({
-                success: false,
-                result: null,
-                error: `Tool '${toolName}' is not allowed in transitive reasoning phase`,
-              }),
-            }
+        if (!TRANSITIVE_SKILL_TOOL_NAMES.has(toolName)) {
+          return {
+            toolCall,
+            error: `Tool '${toolName}' is not allowed in transitive reasoning phase`,
           }
+        }
 
-          try {
-            const args = JSON.parse(toolCall.function.arguments)
-            const toolResult = await options.toolRegistry.executeTool(toolName, args)
-            return {
-              role: "tool" as const,
-              tool_call_id: toolCall.id,
+        try {
+          const args = JSON.parse(toolCall.function.arguments) as Record<string, unknown>
+          return {
+            toolCall,
+            parsed: {
               name: toolName,
-              content: JSON.stringify(toolResult),
-            }
-          } catch (error) {
-            return {
-              role: "tool" as const,
-              tool_call_id: toolCall.id,
-              name: toolName,
-              content: JSON.stringify({
-                success: false,
-                result: null,
-                error: error instanceof Error ? error.message : "Failed to parse tool arguments",
-              }),
-            }
+              args,
+              toolCallId: toolCall.id,
+            },
           }
-        })
-      )
+        } catch (error) {
+          return {
+            toolCall,
+            error: error instanceof Error ? error.message : "Failed to parse tool arguments",
+          }
+        }
+      })
+
+      const executableCalls = preparedCalls
+        .filter(
+          (item): item is { toolCall: ToolCall; parsed: { name: string; args: Record<string, unknown>; toolCallId: string } } =>
+            "parsed" in item
+        )
+        .map((item) => item.parsed)
+
+      const batchResults = await options.toolRegistry.executeToolsBatch(executableCalls)
+      let batchResultIndex = 0
+
+      const toolMessages = preparedCalls.map((item) => {
+        if ("error" in item) {
+          return {
+            role: "tool" as const,
+            tool_call_id: item.toolCall.id,
+            name: item.toolCall.function.name,
+            content: JSON.stringify({
+              success: false,
+              result: null,
+              error: item.error,
+            }),
+          }
+        }
+
+        const currentResult = batchResults[batchResultIndex++]
+        return {
+          role: "tool" as const,
+          tool_call_id: item.toolCall.id,
+          name: item.toolCall.function.name,
+          content: JSON.stringify(currentResult.result),
+        }
+      })
 
       conversation.push(...toolMessages)
       continue

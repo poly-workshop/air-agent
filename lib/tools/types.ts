@@ -37,6 +37,24 @@ export interface ToolResult {
 }
 
 /**
+ * Batch tool execution request item
+ */
+export interface BatchToolCall {
+  name: string
+  args: Record<string, unknown>
+  toolCallId?: string
+}
+
+/**
+ * Batch tool execution result item
+ */
+export interface BatchToolResult {
+  name: string
+  toolCallId?: string
+  result: ToolResult
+}
+
+/**
  * Tool executor function signature
  */
 export type ToolExecutor = (args: Record<string, unknown>) => Promise<ToolResult>
