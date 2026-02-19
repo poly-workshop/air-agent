@@ -176,12 +176,11 @@ describe("skills zip install", () => {
 
     const doc = await getSkillContentById("my-coding-style")
     expect(doc).not.toBeNull()
-    // preamble becomes implicit first section
-    expect(doc!.sections).toHaveLength(3)
-    expect(doc!.sections![0].topic).toBe("My Coding Style")
-    expect(doc!.sections![0].content).toContain("style guide")
-    expect(doc!.sections![1].topic).toBe("naming")
-    expect(doc!.sections![2].topic).toBe("formatting")
+    // preamble is NOT a section, only ## headings are
+    expect(doc!.sections).toHaveLength(2)
+    expect(doc!.sections![0].topic).toBe("naming")
+    expect(doc!.sections![1].topic).toBe("formatting")
+    expect(doc!.content).toContain("style guide")
     expect(doc!.content).toContain("camelCase")
   })
 
@@ -253,11 +252,9 @@ describe("skills zip install", () => {
 
     const doc = await getSkillContentById("verify")
     expect(doc).not.toBeNull()
-    // preamble becomes implicit section with topic from h1
-    expect(doc!.sections).toHaveLength(2)
-    expect(doc!.sections![0].topic).toBe("Verification")
-    expect(doc!.sections![0].content).toContain("Run all verification steps.")
-    expect(doc!.sections![1].topic).toBe("Instructions")
+    // preamble is NOT a section
+    expect(doc!.sections).toHaveLength(1)
+    expect(doc!.sections![0].topic).toBe("Instructions")
     expect(doc!.content).toContain("Run lint")
     expect(doc!.content).toContain("Run all verification steps.")
   })

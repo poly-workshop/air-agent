@@ -6,8 +6,10 @@ import {
   getSkillContentById,
   getSkillContentForTool,
   installSkillFromJson,
+  listInstalledSkills,
   listSkillIndex,
   resetSkillsStoreForTests,
+  uninstallInstalledSkill,
 } from "@/lib/skills"
 
 const localStorageMock = (() => {
@@ -211,5 +213,60 @@ describe("skills store", () => {
     const content = await getSkillContentById("qwen-coder-style")
     expect(content?.content).toContain("Installed content override.")
     expect(content?.version).toBe("9.9.9")
+  })
+
+  it("lists installed skills only", async () => {
+    await installSkillFromJson(
+      JSON.stringify({
+        metadata: {
+          id: "custom-style",
+          name: "Custom Style",
+          summary: "User installed skill package",
+          tags: ["custom", "workflow"],
+          version: "1.0.0",
+        },
+        content: "Custom content",
+      })
+    )
+
+    const installed = listInstalledSkills()
+    expect(installed).toHaveLength(1)
+    expect(installed[0].id).toBe("custom-style")
+    expect(installed[0].file).toBe("installed:custom-style")
+  })
+
+  it("uninstalls installed override and falls back to bundled content", async () => {
+    await installSkillFromJson(
+      JSON.stringify({
+        metadata: {
+          id: "qwen-coder-style",
+          name: "Qwen Coder Style (Installed)",
+          summary: "Installed override",
+          tags: ["coding", "override"],
+          version: "9.9.9",
+        },
+        content: "Installed content override.",
+      })
+    )
+
+    const removed = await uninstallInstalledSkill("qwen-coder-style")
+    expect(removed).toBe(true)
+
+    const installed = listInstalledSkills()
+    expect(installed).toHaveLength(0)
+
+    const index = await listSkillIndex()
+    const bundled = index.find((item) => item.id === "qwen-coder-style")
+    expect(bundled?.file).toBe("qwen-coder-style.json")
+    expect(bundled?.version).toBe("1.0.0")
+
+    const content = await getSkillContentById("qwen-coder-style")
+    expect(content?.version).toBe("1.0.0")
+    expect(content?.content).toContain("PLAN")
+  })
+
+  it("returns false when uninstall target is not installed", async () => {
+    const removed = await uninstallInstalledSkill("qwen-coder-style")
+    expect(removed).toBe(false)
   })
 })

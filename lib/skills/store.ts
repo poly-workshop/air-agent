@@ -369,6 +369,35 @@ async function saveSkillDocumentToCache(document: SkillContentDocument, installe
   }
 }
 
+async function removeSkillDocumentFromCache(skillId: string, installed: boolean): Promise<void> {
+  try {
+    const db = await getDbPromise()
+    await db.delete(SKILLS_CACHE_STORE, getDocumentStoreKey(skillId, installed))
+  } catch (error) {
+    console.error("[skills] failed to remove skill from cache", error)
+  }
+}
+
+export function listInstalledSkills(): SkillIndexEntry[] {
+  return readInstalledSkillIndex()
+}
+
+export async function uninstallInstalledSkill(skillId: string): Promise<boolean> {
+  const installedIndex = readInstalledSkillIndex()
+  const existing = installedIndex.find((item) => item.id === skillId)
+  if (!existing || !isInstalledEntry(existing)) {
+    return false
+  }
+
+  const nextInstalledIndex = installedIndex.filter((item) => item.id !== skillId)
+  saveInstalledSkillIndex(nextInstalledIndex)
+  inMemoryContentCache.delete(getMemoryCacheKey(skillId, true))
+  await removeSkillDocumentFromCache(skillId, true)
+  skillIndexCache = null
+
+  return true
+}
+
 async function fetchSkillDocumentFromPublic(entry: SkillIndexEntry): Promise<SkillContentDocument> {
   const response = await fetch(`/skills/${entry.file}`)
   if (!response.ok) {

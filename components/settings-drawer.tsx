@@ -1,7 +1,7 @@
 "use client"
 
 import * as React from "react"
-import { Settings, Download, Upload } from "lucide-react"
+import { Settings, Download, Upload, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -17,7 +17,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { ThemeSelector } from "@/components/theme-selector"
 import { McpConfigDialog } from "@/components/mcp-config-dialog"
-import { installSkillsFromZipFile } from "@/lib/skills"
+import { installSkillsFromZipFile, listInstalledSkills, uninstallInstalledSkill } from "@/lib/skills"
+import type { SkillIndexEntry } from "@/lib/skills"
 import { getDefaultTools } from "@/lib/tools"
 
 interface SettingsData {
@@ -47,13 +48,24 @@ export function SettingsDrawer({
 }: SettingsDrawerProps) {
   const [localSettings, setLocalSettings] = React.useState(settings)
   const [open, setOpen] = React.useState(false)
+  const [installedSkills, setInstalledSkills] = React.useState<SkillIndexEntry[]>([])
   const importInputRef = React.useRef<HTMLInputElement>(null)
   const installSkillInputRef = React.useRef<HTMLInputElement>(null)
   const builtInTools = React.useMemo(() => getDefaultTools(), [])
 
+  const refreshInstalledSkills = React.useCallback(() => {
+    setInstalledSkills(listInstalledSkills())
+  }, [])
+
   React.useEffect(() => {
     setLocalSettings(settings)
   }, [settings])
+
+  React.useEffect(() => {
+    if (open) {
+      refreshInstalledSkills()
+    }
+  }, [open, refreshInstalledSkills])
 
   const handleSave = () => {
     onSettingsChange(localSettings)
@@ -76,6 +88,22 @@ export function SettingsDrawer({
       ...localSettings,
       enabledBuiltInTools: nextTools,
     })
+  }
+
+  const handleUninstallSkill = async (skillId: string) => {
+    try {
+      const removed = await uninstallInstalledSkill(skillId)
+      if (!removed) {
+        alert("Skill not found or is not an installed skill.")
+        return
+      }
+
+      refreshInstalledSkills()
+      alert(`Skill removed: ${skillId}`)
+    } catch (error) {
+      console.error("Failed to remove skill:", error)
+      alert("Remove failed. Please try again.")
+    }
   }
 
   return (
@@ -263,6 +291,7 @@ export function SettingsDrawer({
                 void (async () => {
                   try {
                     const entries = await installSkillsFromZipFile(file)
+                    refreshInstalledSkills()
                     if (entries.length === 1) {
                       alert(`Skill installed: ${entries[0].name} (${entries[0].id})`)
                     } else {
@@ -279,6 +308,40 @@ export function SettingsDrawer({
               <Upload className="h-4 w-4 mr-2" />
               Install skills.zip
             </Button>
+
+            <div className="grid gap-2">
+              <Label className="text-xs text-muted-foreground">Installed skills</Label>
+              {installedSkills.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No installed skills yet.</p>
+              ) : (
+                <div className="grid gap-2 max-h-56 overflow-y-auto pr-1">
+                  {installedSkills.map((skill) => (
+                    <div
+                      key={skill.id}
+                      className="flex items-start justify-between gap-3 rounded-md border p-2"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium break-all">{skill.name}</p>
+                        <p className="text-xs text-muted-foreground break-all">
+                          {skill.id} · v{skill.version}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          void handleUninstallSkill(skill.id)
+                        }}
+                        aria-label={`Remove installed skill ${skill.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

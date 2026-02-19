@@ -136,7 +136,7 @@ export function parseMarkdownSkill(
   const sections: SkillContentSection[] = []
   let currentTopic: string | null = null
   let currentLines: string[] = []
-  let foundFirstH2 = false
+  let foundFirstSection = false
 
   for (const line of bodyLines) {
     // Match `# Title` (h1) — only the first occurrence
@@ -147,23 +147,23 @@ export function parseMarkdownSkill(
       continue // always skip h1 from body content
     }
 
-    // Match `## Topic` (h2)
-    const h2Match = line.match(/^##\s+(.+)$/)
-    if (h2Match) {
-      // Flush previous section
+    // Match `## ` or `### ` as section boundary
+    const sectionMatch = line.match(/^#{2,3}\s+(.+)$/)
+    if (sectionMatch) {
+      // Flush previous section (skip if empty)
       if (currentTopic !== null) {
-        sections.push({
-          topic: currentTopic,
-          content: currentLines.join("\n").trim(),
-        })
+        const trimmed = currentLines.join("\n").trim()
+        if (trimmed) {
+          sections.push({ topic: currentTopic, content: trimmed })
+        }
       }
-      currentTopic = h2Match[1].trim()
+      currentTopic = sectionMatch[1].trim()
       currentLines = []
-      foundFirstH2 = true
+      foundFirstSection = true
       continue
     }
 
-    if (!foundFirstH2) {
+    if (!foundFirstSection) {
       preambleLines.push(line)
     } else {
       currentLines.push(line)
@@ -171,21 +171,11 @@ export function parseMarkdownSkill(
   }
 
   // Flush last section
-  if (currentTopic !== null && currentLines.length > 0) {
-    sections.push({
-      topic: currentTopic,
-      content: currentLines.join("\n").trim(),
-    })
-  }
-
-  // If there's preamble text and h2 sections exist, add preamble as an
-  // implicit first section so it's retrievable via topic-based filtering.
-  const preambleText = preambleLines.join("\n").trim()
-  if (preambleText && sections.length > 0) {
-    sections.unshift({
-      topic: h1Text || "overview",
-      content: preambleText,
-    })
+  if (currentTopic !== null) {
+    const trimmed = currentLines.join("\n").trim()
+    if (trimmed) {
+      sections.push({ topic: currentTopic, content: trimmed })
+    }
   }
 
   const id = deriveId(frontmatter, filepath)
@@ -194,6 +184,8 @@ export function parseMarkdownSkill(
     const basename = filepath.replace(/\\/g, "/").split("/").pop() || filepath
     name = basename.replace(/\.md$/i, "")
   }
+
+  const preambleText = preambleLines.join("\n").trim()
 
   const summary =
     frontmatter.description ??

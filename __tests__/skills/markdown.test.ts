@@ -24,15 +24,13 @@ describe("parseMarkdownSkill", () => {
     expect(pkg.metadata.summary).toBe("This is the summary.")
     expect(pkg.metadata.version).toBe("1.0.0")
     expect(pkg.metadata.tags).toEqual([])
-    // preamble "This is the summary." becomes implicit first section
-    expect(pkg.sections).toHaveLength(3)
-    expect(pkg.sections![0].topic).toBe("My Skill")
-    expect(pkg.sections![0].content).toBe("This is the summary.")
-    expect(pkg.sections![1].topic).toBe("setup")
-    expect(pkg.sections![1].content).toBe("Install dependencies first.")
-    expect(pkg.sections![2].topic).toBe("usage")
-    expect(pkg.sections![2].content).toBe("Call the main function.")
-    // full body content is always set
+    // preamble is NOT a section — only ## headings create sections
+    expect(pkg.sections).toHaveLength(2)
+    expect(pkg.sections![0].topic).toBe("setup")
+    expect(pkg.sections![0].content).toBe("Install dependencies first.")
+    expect(pkg.sections![1].topic).toBe("usage")
+    expect(pkg.sections![1].content).toBe("Call the main function.")
+    // full body content preserves everything
     expect(pkg.content).toContain("This is the summary.")
     expect(pkg.content).toContain("Install dependencies first.")
   })
@@ -76,7 +74,7 @@ describe("parseMarkdownSkill", () => {
     expect(pkg.metadata.id).toBe("my-complex-skill-v2")
   })
 
-  it("uses first paragraph as summary", () => {
+  it("uses first paragraph as summary when no frontmatter", () => {
     const md = [
       "# Skill",
       "",
@@ -91,11 +89,9 @@ describe("parseMarkdownSkill", () => {
 
     const pkg = parseMarkdownSkill(md, "skill.md")
     expect(pkg.metadata.summary).toBe("First paragraph is the summary.")
-    // preamble becomes implicit section
-    expect(pkg.sections).toHaveLength(2)
-    expect(pkg.sections![0].topic).toBe("Skill")
-    expect(pkg.sections![0].content).toContain("First paragraph")
-    expect(pkg.sections![0].content).toContain("Second paragraph")
+    // only ## creates a section, preamble stays in content only
+    expect(pkg.sections).toHaveLength(1)
+    expect(pkg.sections![0].topic).toBe("section")
   })
 
   it("parses YAML frontmatter for metadata", () => {
@@ -124,13 +120,11 @@ describe("parseMarkdownSkill", () => {
     expect(pkg.metadata.summary).toBe("Validate changes before committing.")
     expect(pkg.metadata.version).toBe("2.0.0")
     expect(pkg.metadata.tags).toEqual(["ci", "testing"])
-    // preamble becomes implicit section with topic from h1
-    expect(pkg.sections).toHaveLength(2)
-    expect(pkg.sections![0].topic).toBe("Verification")
-    expect(pkg.sections![0].content).toContain("Run all verification steps.")
-    expect(pkg.sections![1].topic).toBe("Instructions")
-    expect(pkg.sections![1].content).toContain("Run lint")
-    // full body content preserves everything
+    // preamble is not a section
+    expect(pkg.sections).toHaveLength(1)
+    expect(pkg.sections![0].topic).toBe("Instructions")
+    expect(pkg.sections![0].content).toContain("Run lint")
+    // full body content preserves preamble and sections
     expect(pkg.content).toContain("Run all verification steps.")
     expect(pkg.content).toContain("Run lint")
   })
@@ -150,10 +144,8 @@ describe("parseMarkdownSkill", () => {
 
     expect(pkg.metadata.id).toBe("my-tool")
     expect(pkg.metadata.name).toBe("My Tool")
-    // preamble + h2 section
-    expect(pkg.sections).toHaveLength(2)
-    expect(pkg.sections![0].topic).toBe("My Tool")
-    expect(pkg.sections![0].content).toBe("Summary here.")
+    expect(pkg.sections).toHaveLength(1)
+    expect(pkg.sections![0].topic).toBe("usage")
   })
 
   it("uses folder name as id for README.md", () => {
@@ -194,7 +186,94 @@ describe("parseMarkdownSkill", () => {
     expect(pkg.metadata.id).toBe("my-great-skill")
   })
 
-  it("handles real-world SKILL.md with frontmatter + preamble + section", () => {
+  it("parses ### headings as sections", () => {
+    const md = [
+      "# Operations",
+      "",
+      "## Supported Operations",
+      "",
+      "### Task CRUD",
+      "",
+      "- `create_task`: Required: `title`",
+      "- `get_task`: Required: `id`",
+      "",
+      "### Checklist Operations",
+      "",
+      "- `add_checklist_item`: Required: `task_id`, `content`",
+      "",
+      "## Error Handling",
+      "",
+      "Handle errors gracefully.",
+    ].join("\n")
+
+    const pkg = parseMarkdownSkill(md, "ops.md")
+
+    // ## Supported Operations has no direct content (only ### children) → skipped
+    // ### Task CRUD, ### Checklist Operations, ## Error Handling → 3 sections
+    expect(pkg.sections).toHaveLength(3)
+    expect(pkg.sections![0].topic).toBe("Task CRUD")
+    expect(pkg.sections![0].content).toContain("create_task")
+    expect(pkg.sections![1].topic).toBe("Checklist Operations")
+    expect(pkg.sections![1].content).toContain("add_checklist_item")
+    expect(pkg.sections![2].topic).toBe("Error Handling")
+    expect(pkg.sections![2].content).toBe("Handle errors gracefully.")
+  })
+
+  it("handles real-world SKILL.md with frontmatter + preamble + sections + subsections", () => {
+    const md = [
+      "---",
+      "name: slips-skill",
+      "description: Use for Slips task management requests through slips-mcp.",
+      "---",
+      "",
+      "# Slips Task Management",
+      "",
+      "Use this skill when the user asks to manage tasks in Slips.",
+      "",
+      "## Scope",
+      "",
+      "This skill covers task operations backed by slips-mcp.",
+      "",
+      "## Supported Operations (Tool Mapping)",
+      "",
+      "### Task CRUD",
+      "",
+      "- `create_task`",
+      "  - Required: `title`",
+      "",
+      "### Checklist Operations",
+      "",
+      "- `add_checklist_item`",
+      "  - Required: `task_id`, `content`",
+      "",
+      "## Error Handling",
+      "",
+      "- Missing required field: ask for only the missing field(s).",
+    ].join("\n")
+
+    const pkg = parseMarkdownSkill(md, "SKILL.md")
+
+    expect(pkg.metadata.id).toBe("slips-skill")
+    expect(pkg.metadata.name).toBe("slips-skill")
+    expect(pkg.metadata.summary).toBe("Use for Slips task management requests through slips-mcp.")
+    // Sections: Scope, Task CRUD, Checklist Operations, Error Handling
+    // "Supported Operations" is skipped (empty content before first ###)
+    expect(pkg.sections).toHaveLength(4)
+    expect(pkg.sections![0].topic).toBe("Scope")
+    expect(pkg.sections![1].topic).toBe("Task CRUD")
+    expect(pkg.sections![1].content).toContain("create_task")
+    expect(pkg.sections![2].topic).toBe("Checklist Operations")
+    expect(pkg.sections![2].content).toContain("add_checklist_item")
+    expect(pkg.sections![3].topic).toBe("Error Handling")
+    // Full content preserves everything including preamble
+    expect(pkg.content).toContain("Use this skill when the user asks to manage tasks in Slips.")
+    expect(pkg.content).toContain("create_task")
+    expect(pkg.content).toContain("add_checklist_item")
+    expect(pkg.content).toContain("Missing required field")
+    expect(pkg.content).not.toContain("# Slips Task Management")
+  })
+
+  it("handles real-world verify SKILL.md", () => {
     const md = [
       "---",
       "name: verify",
@@ -226,17 +305,11 @@ describe("parseMarkdownSkill", () => {
 
     expect(pkg.metadata.id).toBe("verify")
     expect(pkg.metadata.name).toBe("verify")
-    expect(pkg.metadata.summary).toBe(
-      "Use when you want to validate changes before committing, or when you need to check all React contribution requirements."
-    )
-    // preamble (between h1 and h2) becomes implicit first section
-    expect(pkg.sections).toHaveLength(2)
-    expect(pkg.sections![0].topic).toBe("Verification")
-    expect(pkg.sections![0].content).toContain("Run all verification steps.")
-    expect(pkg.sections![0].content).toContain("$ARGUMENTS")
-    expect(pkg.sections![1].topic).toBe("Instructions")
-    expect(pkg.sections![1].content).toContain("yarn prettier")
-    // full body content preserves everything
+    // preamble is NOT a section — topic search won't falsely match document title
+    expect(pkg.sections).toHaveLength(1)
+    expect(pkg.sections![0].topic).toBe("Instructions")
+    expect(pkg.sections![0].content).toContain("yarn prettier")
+    // full body content preserves everything including preamble
     expect(pkg.content).toContain("Run all verification steps.")
     expect(pkg.content).toContain("$ARGUMENTS")
     expect(pkg.content).toContain("yarn prettier")
