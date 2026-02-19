@@ -20,6 +20,8 @@ import { ToolRegistry, ChatMessage, ToolCall } from "@/lib/tools"
 import { useSession } from "@/lib/session/context"
 import { toSessionMessage, fromSessionMessage } from "@/lib/session/types"
 
+const TRANSITIVE_SKILL_TOOL_NAMES = new Set(["list_skills", "get_skill_content"])
+
 function detectUserLanguage(text: string): "Chinese" | "English" {
   const hasCjk = /[\u3400-\u9FFF\uF900-\uFAFF]/.test(text)
   return hasCjk ? "Chinese" : "English"
@@ -32,61 +34,139 @@ async function generateTransitiveThought(options: {
   systemPrompt: string
   messages: ChatMessage[]
   outputLanguage: "Chinese" | "English"
+  toolRegistry: ToolRegistry
 }): Promise<string> {
-  const response = await fetch(`${options.baseUrl}/chat/completions`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${options.apiKey}`,
+  const phaseSystemPrompt = [
+    options.systemPrompt,
+    "",
+    "You are now in Phase 1 (transitive reasoning draft).",
+    "Output only a short Markdown block with this exact structure:",
+    "### Reasoning Chain",
+    "1. ...",
+    "2. ...",
+    "3. ...",
+    "Requirements:",
+    "- Do not provide the final answer",
+    "- You may call only these tools when strictly necessary: list_skills, get_skill_content",
+    "- Do not call any other tool",
+    "- If information is missing, state what is missing clearly",
+    `- Write all content in ${options.outputLanguage}`,
+  ]
+    .filter(Boolean)
+    .join("\n")
+
+  const skillTools = options
+    .toolRegistry
+    .getToolDefinitions()
+    .filter((tool) => TRANSITIVE_SKILL_TOOL_NAMES.has(tool.function.name))
+
+  const conversation: ChatMessage[] = [
+    {
+      role: "system",
+      content: phaseSystemPrompt,
     },
-    body: JSON.stringify({
-      model: options.model,
-      stream: false,
-      messages: [
-        {
-          role: "system",
-          content: [
-            options.systemPrompt,
-            "",
-            "You are now in Phase 1 (transitive reasoning draft).",
-            "Output only a short Markdown block with this exact structure:",
-            "### Reasoning Chain",
-            "1. ...",
-            "2. ...",
-            "3. ...",
-            "Requirements:",
-            "- Do not provide the final answer",
-            "- Do not call tools",
-            "- If information is missing, state what is missing clearly",
-            `- Write all content in ${options.outputLanguage}`,
-          ]
-            .filter(Boolean)
-            .join("\n"),
-        },
-        ...options.messages,
-      ],
-    }),
-  })
+    ...options.messages,
+  ]
 
-  if (!response.ok) {
-    const errorText = await response.text()
-    throw new Error(`Thought phase failed: ${response.status} ${response.statusText} - ${errorText}`)
+  const maxReasoningIterations = 3
+
+  for (let iteration = 0; iteration < maxReasoningIterations; iteration += 1) {
+    const response = await fetch(`${options.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${options.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: options.model,
+        stream: false,
+        messages: conversation,
+        tools: skillTools.length > 0 ? skillTools : undefined,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(`Thought phase failed: ${response.status} ${response.statusText} - ${errorText}`)
+    }
+
+    const payload = (await response.json()) as {
+      choices?: Array<{
+        message?: {
+          role?: "assistant"
+          content?: string | null
+          tool_calls?: ToolCall[]
+        }
+      }>
+    }
+
+    const assistantMessage = payload.choices?.[0]?.message
+    if (!assistantMessage) {
+      throw new Error("Thought phase returned invalid response")
+    }
+
+    const assistantChatMessage: ChatMessage = {
+      role: "assistant",
+      content: assistantMessage.content ?? null,
+      ...(assistantMessage.tool_calls && { tool_calls: assistantMessage.tool_calls }),
+    }
+    conversation.push(assistantChatMessage)
+
+    if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+      const toolMessages = await Promise.all(
+        assistantMessage.tool_calls.map(async (toolCall) => {
+          const toolName = toolCall.function.name
+
+          if (!TRANSITIVE_SKILL_TOOL_NAMES.has(toolName)) {
+            return {
+              role: "tool" as const,
+              tool_call_id: toolCall.id,
+              name: toolName,
+              content: JSON.stringify({
+                success: false,
+                result: null,
+                error: `Tool '${toolName}' is not allowed in transitive reasoning phase`,
+              }),
+            }
+          }
+
+          try {
+            const args = JSON.parse(toolCall.function.arguments)
+            const toolResult = await options.toolRegistry.executeTool(toolName, args)
+            return {
+              role: "tool" as const,
+              tool_call_id: toolCall.id,
+              name: toolName,
+              content: JSON.stringify(toolResult),
+            }
+          } catch (error) {
+            return {
+              role: "tool" as const,
+              tool_call_id: toolCall.id,
+              name: toolName,
+              content: JSON.stringify({
+                success: false,
+                result: null,
+                error: error instanceof Error ? error.message : "Failed to parse tool arguments",
+              }),
+            }
+          }
+        })
+      )
+
+      conversation.push(...toolMessages)
+      continue
+    }
+
+    const content = assistantMessage.content
+    if (!content || !content.trim()) {
+      throw new Error("Thought phase returned empty content")
+    }
+
+    return content.trim()
   }
 
-  const payload: unknown = await response.json()
-  const content =
-    typeof payload === "object" &&
-    payload !== null &&
-    "choices" in payload &&
-    Array.isArray((payload as { choices?: unknown[] }).choices)
-      ? (payload as { choices: Array<{ message?: { content?: string } }> }).choices[0]?.message?.content
-      : ""
-
-  if (!content || !content.trim()) {
-    throw new Error("Thought phase returned empty content")
-  }
-
-  return content.trim()
+  throw new Error("Thought phase exceeded maximum reasoning iterations")
 }
 
 interface Message {
@@ -281,6 +361,7 @@ export function ChatInterface({
           baseUrl: url,
           model: model || DEFAULT_MODEL,
           systemPrompt: effectiveSystemPrompt,
+          toolRegistry,
           messages: [
             ...priorMessages,
             {
